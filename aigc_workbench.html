@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AIGC 出图工作台</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%232f6bff'/%3E%3C/svg%3E">
+<style>
+  /* ---- 视觉六条（对齐 Open Creative Agent 那套"好看"的手法，但**留白按本页适配**，不照搬它的比例）----
+     ① 大留白：适度加（本页是密集工作台，不是画布型工具，不能照抄 65/35）
+     ② 几乎零线条：分隔线压到极浅，靠留白区分区块，不靠边框
+     ③ 统一大圆角：同一套圆角贯穿按钮 / 卡片 / 输入框 / 徽标
+     ④ 只有一个强调色：界面 chrome 只用品牌蓝，其余全是白 + 灰阶
+     ⑤ 两级字体层级：标题(深) / 说明(浅小)，不再有第三级
+     ⑥ 克制：高饱和色只留给"状态"和"组合词结构"这两处有信息量的地方 */
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --line:#eef0f4; --line2:#f4f6f8;
+    --tx:#1f2329; --tx2:#6b7280; --tx3:#9aa1ab;
+    --brand:#2f6bff; --brand2:#eef3ff; --ok:#12b76a; --warn:#f79009; --err:#f04438;
+    --r:12px; --r-sm:9px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font:14px/1.5 -apple-system,"Segoe UI","Microsoft YaHei",sans-serif;color:var(--tx);background:var(--bg)}
+  button{font:inherit;cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--tx);border-radius:var(--r-sm);padding:7px 13px}
+  button:hover{border-color:#d6dbe3}
+  button.primary{background:var(--brand);border-color:var(--brand);color:#fff}
+  button.primary:hover{filter:brightness(1.05)}
+  button.good{background:#effbf4;border-color:#bdf0d3;color:var(--ok)}
+  button.good:hover{filter:brightness(.98)}
+  button.mini{padding:2px 7px;font-size:11px;line-height:1.5}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  input,textarea,select{font:inherit;color:var(--tx);border:1px solid var(--line);border-radius:var(--r-sm);padding:7px 10px;background:#fff;width:100%}
+  textarea{resize:vertical;min-height:70px;line-height:1.5}
+  .app{display:flex;min-height:100vh}
+
+  /* sidebar */
+  .sidebar{width:196px;background:#fbfbfc;border-right:1px solid var(--line);padding:14px 10px;
+    flex:0 0 196px;display:flex;flex-direction:column}
+  .brand{font-weight:700;font-size:13px;padding:6px 10px 14px;color:var(--tx)}
+  .brand small{display:block;font-weight:400;color:var(--tx3);font-size:11px;margin-top:2px}
+  .nav a{display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;color:var(--tx2);cursor:pointer;margin-bottom:2px}
+  .nav a:hover{background:#f1f3f6}
+  .nav a.on{background:var(--brand2);color:var(--brand);font-weight:600}
+  .nav a .ico{width:16px;height:16px;flex:0 0 16px;display:inline-flex;align-items:center;justify-content:center;
+    color:var(--tx3);opacity:.9}
+  .nav a:hover .ico{color:var(--tx2)}
+  .nav a.on .ico{color:var(--brand);opacity:1}
+  .nav a .ico svg{width:16px;height:16px;display:block}
+
+  /* main */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topbar{display:flex;align-items:center;gap:12px;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line)}
+  .topbar .title{font-weight:600;font-size:14px}
+  .topbar .crumb{color:var(--tx3);font-size:12px;border-left:1px solid var(--line);padding-left:10px}
+  .mtag{border-bottom:1px dotted #c5cad3;cursor:help}
+  .topbar .grow{flex:1}
+  .proj{display:flex;align-items:center;gap:6px;color:var(--tx2);font-size:13px}
+  .proj select{width:auto;min-width:130px}
+  .emp{display:flex;align-items:center;gap:6px;color:var(--tx2);font-size:13px}
+  .emp input{width:104px}
+
+  .view{padding:22px;display:none;flex:1}
+  .view.on{display:block}
+  /* 出图 / 文生图 两页：整页纵向铺满，好让「预览区」吃掉剩余高度
+     （「生成预览界面最大」就是这两页的设计语言，不是装饰） */
+  #v-gen.on,#v-t2i.on{display:flex;flex-direction:column}
+  .hidden{display:none!important}
+
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;color:var(--tx3);font-size:12px}
+  .steps span{background:#fff;border:1px solid var(--line);border-radius:20px;padding:3px 10px}
+  .steps span.on{background:var(--brand2);border-color:#c9d9ff;color:var(--brand)}
+
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px}
+  .panel h3{margin:0 0 12px;font-size:13px;color:var(--tx2);font-weight:600;display:flex;align-items:center;gap:8px}
+  .panel h3 .tag{font-weight:400;color:var(--tx3);font-size:11px}
+
+  /* ① preview */
+  .preview{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:18px;margin-bottom:16px}
+  .pgrid{display:grid;grid-template-columns:1fr 44px 1fr 44px 1.35fr;align-items:stretch;gap:0}
+  .pcard{border:1px solid var(--line);border-radius:var(--r);overflow:hidden;display:flex;flex-direction:column;min-height:240px;background:#fcfcfd}
+  /* 预览区随窗口高度拉伸；窗口不够高时回落到 .pcard 的 min-height */
+  #v-gen .genwrap,#v-t2i .genwrap{flex:1;min-height:0;align-items:stretch}
+  #v-gen .genmain,#v-t2i .genmain{display:flex;flex-direction:column;min-height:0}
+  #v-gen .steps,#v-gen .row3,#v-t2i .row3{flex:0 0 auto}
+  #v-gen .preview,#v-t2i .preview{flex:1;display:flex;flex-direction:column;min-height:0}
+  #v-gen .pgrid,#v-t2i .preview>.pcard{flex:1;min-height:0}
+  #v-gen .pfoot,#v-t2i .pfoot{flex:0 0 auto}
+  /* 矮屏（笔记本外接投影常见）兜底：放弃拉伸，回到原来的流式高度，避免把下三栏挤没 */
+  @media (max-height:820px){
+    #v-gen .preview,#v-t2i .preview{flex:0 0 auto}
+  }
+  .pcard .h{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border-bottom:1px solid var(--line2);font-size:12px;color:var(--tx2)}
+  .pcard .h b{color:var(--tx);font-size:12.5px}
+  .pcard .body{flex:1;display:flex;align-items:center;justify-content:center;background:
+     linear-gradient(45deg,#f4f5f7 25%,transparent 25%,transparent 75%,#f4f5f7 75%) 0 0/18px 18px,
+     linear-gradient(45deg,#f4f5f7 25%,transparent 25%,transparent 75%,#f4f5f7 75%) 9px 9px/18px 18px;
+     background-color:#fff;position:relative;padding:8px;min-height:0;overflow:hidden}
+  .pcard .body img{max-width:100%;max-height:100%;border-radius:6px;object-fit:contain}
+  .pcard .ph{color:var(--tx3);font-size:12px;text-align:center;padding:10px;line-height:1.6}
+  .pcard .ph code{display:block;margin-top:6px;font-size:11px;color:#8b93a1;max-width:220px;margin-inline:auto;white-space:pre-wrap}
+  .parrow{display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:18px;font-weight:700}
+  .pfoot{display:flex;gap:8px;justify-content:flex-end;align-items:center;margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+  .pfoot .hint{margin-right:auto;color:var(--tx3);font-size:12px}
+
+  /* 视觉模板 · 镜头组带（在三条支线卡片下方）—— 证明"一个视觉模板＝一组图，不是一张" */
+  .shotstrip{flex:0 0 auto;margin-top:10px;border:1px solid var(--line);border-radius:var(--r);
+    background:var(--panel);padding:9px 11px}
+  .ss-h{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--tx2)}
+  .ss-h b{color:var(--tx);font-size:12.5px}
+  .ss-h .ss-sub{color:var(--tx3);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ss-body{display:flex;gap:7px;overflow-x:auto;margin-top:8px;min-height:64px;align-items:center}
+  .ss-body .empty{font-size:11.5px}
+  .ss-i{flex:0 0 auto;width:64px;position:relative}
+  .ss-i .im{width:64px;height:64px;border:1px solid var(--line);border-radius:7px;overflow:hidden;background:#fff}
+  .ss-i .im img{width:100%;height:100%;object-fit:cover}
+  .ss-i .cap{font-size:10px;color:var(--tx3);margin-top:3px;text-align:center;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  /* 组合提示词：三段用三种颜色标出来（蓝＝形象／绿＝场景／橙＝产品，与三卡配色一致） */
+  .combobox{border:1px solid var(--line);border-radius:8px;background:#fbfbfc;padding:8px 9px;
+    font-size:11.5px;color:var(--tx2);line-height:1.6;max-height:78px;overflow:auto;white-space:pre-wrap}
+  .combobox .seg-a{color:#366ab8}
+  .combobox .seg-b{color:#1c8668}
+  .combobox .seg-c{color:#c66a20}
+
+  /* bottom 3 blocks */
+  .row3{display:grid;grid-template-columns:1.05fr 1fr 1fr;gap:16px}
+  .thumbs{display:flex;gap:8px;flex-wrap:wrap;min-height:64px}
+  .th{width:64px;height:64px;border:1px solid var(--line);border-radius:8px;overflow:hidden;position:relative;background:#fff}
+  .th img{width:100%;height:100%;object-fit:cover}
+  .th.up{display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:20px;cursor:pointer;border-style:dashed}
+  .fld{margin-bottom:10px}
+  .fld label{display:block;font-size:12px;color:var(--tx2);margin-bottom:4px}
+  .fld-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .fld-h label{margin-bottom:0}
+  .refslots{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+  .refslot .rs-lb{font-size:11px;color:var(--tx2);margin-bottom:5px}
+  .refslot .thumbs{min-height:56px}
+  .btnrow{display:flex;gap:8px;flex-wrap:wrap}
+  .sep{height:1px;background:var(--line2);margin:12px 0}
+  .subttl{font-size:11px;color:var(--tx3);margin:0 0 8px;letter-spacing:.03em}
+
+  /* library */
+  .libgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+  .rcard{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:12px;display:flex;flex-direction:column;gap:10px}
+  .rcard .rh{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .rcard .rn{font-weight:600}
+  .rcard .rid{font-size:11px;color:var(--tx3);font-family:ui-monospace,Consolas,monospace}
+  .rstrip{display:flex;gap:6px;flex-wrap:wrap}
+  .rstrip .s{width:52px;height:52px;border-radius:6px;border:1px solid var(--line);overflow:hidden;background:#fafbfc;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:10px}
+  .rstrip .s img{width:100%;height:100%;object-fit:cover}
+  .rstrip .s.more{background:#eef2f7;color:var(--tx2);font-weight:700;font-size:12.5px;border-style:dashed}
+  .perf{display:flex;gap:10px;background:#fafbfc;border:1px solid var(--line2);border-radius:8px;padding:8px}
+  .perf div{flex:1;text-align:center}
+  .perf b{display:block;font-size:15px}
+  .perf small{color:var(--tx3);font-size:11px}
+  .badge{font-size:11px;border-radius:20px;padding:2px 9px;border:1px solid}
+  .b-good{color:var(--ok);border-color:#bdf0d3;background:#effbf4}
+  .b-mid{color:var(--warn);border-color:#ffe3b0;background:#fff9ef}
+  .b-none{color:var(--tx3);border-color:var(--line);background:#fafbfc}
+  /* 顶部「正式 / 联调」开关：现场一下点到，当前态高亮（联调＝橙） */
+  .modesw{display:inline-flex;align-items:center;border:1px solid var(--line);
+    border-radius:20px;background:#f6f7f9;padding:2px;gap:2px;flex:0 0 auto}
+  .modesw .mo{font-size:11px;font-weight:500;color:var(--tx3);padding:2px 10px;
+    border-radius:16px;cursor:pointer;user-select:none;transition:.15s;line-height:1.5;white-space:nowrap}
+  .modesw .mo:hover{color:#374151}
+  .modesw .mo.on{background:var(--brand);color:#fff}
+  .modesw .mo.on.warn{background:var(--warn)}
+
+  /* tables / grids */
+  table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+  th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--line2);vertical-align:top}
+  th{background:#fafbfc;color:var(--tx2);font-weight:600;font-size:12px}
+  tr:last-child td{border-bottom:0}
+  .toast{position:fixed;right:16px;bottom:16px;background:#1f2329;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;opacity:0;transition:.25s;pointer-events:none;max-width:340px;z-index:99}
+  .toast.on{opacity:.95}
+  .empty{color:var(--tx3);font-size:13px;padding:24px;text-align:center}
+  .toolbar{display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap}
+  .toolbar .grow{flex:1}
+  .toolbar label{display:flex;align-items:center;gap:6px;color:var(--tx2);font-size:12px}
+  .toolbar select{width:auto;padding:5px 8px;font-size:12px}
+
+  /* 配方卡（可点开） */
+  .rcard.clickable{cursor:pointer;transition:border-color .15s,box-shadow .15s}
+  .rcard.clickable:hover{border-color:#c9d9ff;box-shadow:0 2px 10px rgba(47,107,255,.08)}
+  .rstat{font-size:11.5px;color:var(--tx3);display:flex;gap:10px;flex-wrap:wrap}
+  .rstat b{color:var(--tx2);font-weight:600}
+
+  /* 配方详情抽屉 */
+  .drmask{position:fixed;inset:0;background:rgba(31,35,41,.34);opacity:0;pointer-events:none;transition:.2s;z-index:60}
+  .drmask.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:660px;max-width:93vw;background:#fff;
+    border-left:1px solid var(--line);transform:translateX(102%);transition:transform .22s ease;
+    z-index:61;display:flex;flex-direction:column;box-shadow:-6px 0 24px rgba(31,35,41,.08)}
+  .drawer.on{transform:none}
+  .dr-head{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
+  .dr-head b{font-size:14px}
+  .dr-head .grow{flex:1}
+  .dr-body{flex:1;overflow:auto;padding:14px 16px}
+  .dr-sec{margin-bottom:18px}
+  .dr-sec>h4{margin:0 0 8px;font-size:12px;color:var(--tx2);font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .dr-sec>h4 .tag{font-weight:400;color:var(--tx3);font-size:11px}
+  .kvbox{background:#fafbfc;border:1px solid var(--line2);border-radius:8px;padding:9px 11px;
+    font-size:12.5px;color:var(--tx2);line-height:1.7;white-space:pre-wrap;word-break:break-word}
+  .ogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+  .ocard{border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .ocard .im{height:148px;background:#fafbfc;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:11px}
+  .ocard .im img{width:100%;height:100%;object-fit:cover}
+  .ocard .mt{padding:6px 8px;font-size:11px;color:var(--tx2);line-height:1.55}
+  .ocard .mt b{color:var(--tx);font-size:12px}
+  .dr-foot{display:flex;gap:8px;justify-content:flex-end;padding:12px 16px;border-top:1px solid var(--line);background:#fbfbfc}
+  .mono{font-family:ui-monospace,Consolas,monospace}
+  .perf-meta{margin:8px 0 0;font-size:11px;color:var(--tx3)}
+
+  /* ---- 出图 / 自由出图：主区 + 右侧「轮次记录」栏 ---- */
+  .genwrap{display:flex;gap:16px;align-items:flex-start}
+  .genmain{flex:1;min-width:0}
+  .roundbar{width:200px;flex:0 0 200px;background:#fff;border:1px solid var(--line);border-radius:var(--r);
+    padding:10px;max-height:calc(100vh - 92px);overflow:auto;position:sticky;top:0}
+  .roundbar h3{margin:0 0 9px;font-size:12px;color:var(--tx2);font-weight:600;display:flex;align-items:center;gap:6px}
+  .roundbar h3 .tag{font-weight:400;color:var(--tx3);font-size:10.5px}
+  .roundbar .rtip{margin:-5px 0 9px;font-size:10.5px;color:var(--tx3);line-height:1.45}
+  /* ---- 轮次记录：**只留图**，卡内不出现任何文字（信息走鼠标悬浮） ---- */
+  .rlist{display:flex;flex-direction:column;gap:8px}
+  .ritem{border:1px solid var(--line);border-radius:9px;padding:0;cursor:pointer;background:#fff;
+    overflow:hidden;transition:.15s}
+  .ritem:hover{border-color:#c9d9ff;box-shadow:0 3px 10px rgba(47,107,255,.12)}
+  .ritem.on{border-color:var(--brand);box-shadow:0 0 0 2px var(--brand2)}
+  .rthumb{width:100%;height:104px;background:#fafbfc;overflow:hidden;
+    display:flex;align-items:center;justify-content:center}
+  .rthumb img{width:100%;height:100%;object-fit:cover;display:block}
+
+  /* ---- 成品卡：确认 / 入库 两枚徽标分开显示 ---- */
+  .stwrap{display:flex;gap:4px}
+
+  /* ---- 批量生成表格 ---- */
+  .btable td,.btable th{font-size:12.5px}
+  .st-wait{color:var(--tx3)} .st-run{color:var(--brand)}
+  .st-done{color:var(--ok)} .st-fail{color:var(--err)}
+  .bthumb{width:52px;height:52px;border:1px solid var(--line);border-radius:6px;overflow:hidden;
+    background:#fafbfc;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:10px}
+  .bthumb img{width:100%;height:100%;object-fit:cover}
+  .bprog{height:6px;background:var(--line2);border-radius:4px;overflow:hidden;margin-top:8px}
+  .bprog i{display:block;height:100%;background:var(--brand);width:0;transition:width .2s}
+  .th-tag{font-weight:400;color:var(--tx3);font-size:10.5px}
+  .combocell{font-size:11px;line-height:1.5;color:var(--tx2);max-height:74px;overflow:hidden}
+  .btable td input:not([type=checkbox]){width:100%}
+  /* ---- 批量页顶部的「视觉模板」块：固定部分只读 + 镜头组 ---- */
+  .btpl{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 12px;margin-bottom:10px}
+  .btpl-head{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--tx2)}
+  .btpl-head label{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--tx2)}
+  .btpl-note{color:var(--tx3);font-size:11.5px}
+  .btpl-fixed{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:9px}
+  .btpl-fixed .ff .lb{font-size:11px;color:var(--tx2);margin-bottom:4px}
+  .btpl-fixed .ff .lb .tag{color:var(--tx3);font-weight:400}
+  .btpl-fixed .ro{border:1px solid var(--line);border-radius:7px;background:#fbfbfc;padding:6px 8px;
+    font-size:11.5px;color:var(--tx3);line-height:1.55;max-height:52px;overflow:auto}
+  .btpl-shots{display:flex;gap:6px;overflow-x:auto;margin-top:9px;min-height:44px;align-items:center}
+  .btpl-shots .im{flex:0 0 auto;width:44px;height:44px;border:1px solid var(--line);border-radius:6px;
+    overflow:hidden;background:#fff}
+  .btpl-shots .im img{width:100%;height:100%;object-fit:cover}
+  .btpl-shots .empty{font-size:11.5px;padding-left:2px}
+  .spin{display:inline-block;width:10px;height:10px;border:2px solid #c9d9ff;border-top-color:var(--brand);
+    border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  /* ---- 侧栏底部：环境 / 项目 / 版本（P2-12） ---- */
+  .sidefoot{margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--line);
+    color:var(--tx3);font-size:11.5px;line-height:1.95}
+  .sidefoot .r{display:flex;justify-content:space-between;gap:8px}
+  .sidefoot .r span{white-space:nowrap;flex:0 0 auto}
+  .sidefoot .r b{color:var(--tx2);font-weight:600;flex:1 1 auto;min-width:0;text-align:right;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sidefoot .r b.env{color:var(--warn);display:inline-flex;align-items:center;gap:5px;
+    flex:1 1 auto;justify-content:flex-end}
+  .sidefoot .r b.env i{width:6px;height:6px;border-radius:50%;background:currentColor;flex:0 0 6px}
+
+  /* ---- 批量表格：行删除按钮（P1-7） ---- */
+  .delbtn{padding:3px 7px;line-height:1;color:var(--tx3);border-color:transparent;background:transparent}
+  .delbtn:hover{color:var(--err);border-color:var(--line);background:#fff}
+
+  /* ---- 配方卡：无效果数据空态（P1-8） ---- */
+  .perf-none{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+    border-top:1px dashed var(--line);padding:9px 0 10px;color:var(--tx3)}
+  .perf-none b{font-size:12px;font-weight:600}
+  .perf-none small{font-size:11px}
+
+  /* ---- 第 4 段组合词（动作构图） ---- */
+  .combobox .seg-d{color:#7c5cd6}
+
+  /* ---- 图片灯箱：点击第一页任意图放大 ---- */
+  .lightbox{position:fixed;inset:0;background:rgba(18,21,26,.8);display:none;align-items:center;
+    justify-content:center;z-index:120;cursor:zoom-out;padding:44px}
+  .lightbox.on{display:flex}
+  .lightbox img{max-width:92vw;max-height:88vh;border-radius:var(--r);
+    box-shadow:0 18px 60px rgba(0,0,0,.45);background:#fff}
+  .lightbox .lb-cap{position:fixed;left:0;right:0;bottom:20px;text-align:center;color:#e7eaf0;font-size:12.5px}
+  .lightbox .lb-x{position:fixed;top:16px;right:20px;width:38px;height:38px;border-radius:50%;
+    color:#e7eaf0;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.08);cursor:pointer}
+  .lightbox .lb-x:hover{background:rgba(255,255,255,.18)}
+
+  /* ---- 第一页的图：可点开放大、可拖拽 ---- */
+  #v-gen img{cursor:zoom-in;-webkit-user-drag:element}
+
+  /* ---- 投放框：拖拽悬停高亮 ---- */
+  [data-drop]{position:relative}
+  [data-drop].dz-over{border-color:var(--brand)!important;background:var(--brand2)!important;
+    box-shadow:0 0 0 3px rgba(47,107,255,.12)}
+  [data-drop].dz-over::after{content:"放开 → 放进这里";position:absolute;left:0;right:0;bottom:8px;
+    text-align:center;font-size:11px;color:var(--brand);font-weight:600;pointer-events:none}
+  .thumbs[data-drop].dz-over::after,.ss-body[data-drop].dz-over::after{bottom:auto;top:50%;transform:translateY(-50%)}
+
+  /* ---- 缩略图 / 镜头：hover 右上角出 ✕ ---- */
+  .thx,.ssx{position:absolute;width:18px;height:18px;border-radius:50%;
+    background:#1f2329;color:#fff;font-size:11px;line-height:18px;text-align:center;border:2px solid #fff;
+    display:none;cursor:pointer;z-index:3}
+  .thx{top:-6px;right:-6px}
+  /* 🔴 镜头组带是横向滚动容器（overflow-x:auto）—— 溢出到盒子外的负偏移会被裁掉，
+     所以这里的 ✕ 放在缩略图**内侧**右上角（项目素材那排没有滚动容器，仍然外挂） */
+  .ssx{top:3px;right:3px}
+  .th:hover .thx,.ss-i:hover .ssx{display:block}
+  .thx:hover,.ssx:hover{background:var(--err)}
+
+  /* ---- 动作构图提示词：视觉上跟"场景"一组（都属构图维度） ---- */
+  .fld.act-fld label{color:#6d4fc4}
+  /* ---------- 后台管理 ---------- */
+  .adm-grow{flex:1}
+  .adm-sec{margin-bottom:14px}
+  .adm-sec>h3{margin:0 0 12px;font-size:13px;color:var(--tx2);font-weight:600;display:flex;align-items:center;gap:8px}
+  .adm-2col{display:grid;grid-template-columns:1.22fr 1fr;gap:16px}
+  .adm-2col .subttl{font-size:11px;color:var(--tx3);margin:0 0 8px;letter-spacing:.03em}
+  .admtbl{width:100%;border-collapse:collapse;font-size:12.5px;background:transparent;border:0;border-radius:0}
+  .admtbl th{background:#fafbfc;color:var(--tx2);font-weight:600;font-size:11px;text-align:left;
+    padding:7px 9px;border-bottom:1px solid var(--line2);white-space:nowrap}
+  .admtbl td{padding:7px 9px;border-bottom:1px solid var(--line2);vertical-align:middle}
+  .admtbl tr:last-child td{border-bottom:0}
+  .admtbl .dim{color:var(--tx3)}
+  .adm-strat{font-size:11.5px;color:var(--tx3);white-space:nowrap}
+  .adm-strat b{color:var(--tx);font-weight:600}
+  .adm-note{font-size:11px;color:var(--tx3)}
+  .adm-stamp{font-size:11.5px;color:var(--tx3)}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px;vertical-align:middle}
+  .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.off{background:#c9ced6}
+  .sw{position:relative;display:inline-block;width:34px;height:19px;border-radius:19px;background:#dfe3e9;
+    cursor:pointer;transition:background .16s;vertical-align:middle;border:0;padding:0}
+  .sw::after{content:"";position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;
+    background:#fff;transition:left .16s;box-shadow:0 1px 2px rgba(0,0,0,.18)}
+  .sw.on{background:var(--brand)}
+  .sw.on::after{left:17px}
+  .bar{height:6px;border-radius:6px;background:#eceff3;overflow:hidden;min-width:56px}
+  .bar>i{display:block;height:100%;background:var(--brand);border-radius:6px}
+  .bar>i.warm{background:var(--warn)}
+  .bar>i.hot{background:var(--err)}
+  .adm-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .adm-kpi .k{border:1px solid var(--line);border-radius:var(--r-sm);padding:13px 14px;background:#fcfcfd}
+  .adm-kpi .k .lb{font-size:11.5px;color:var(--tx3);margin-bottom:6px}
+  .adm-kpi .k .vv{font-size:21px;font-weight:650;letter-spacing:-.01em;line-height:1.2}
+  .adm-kpi .k .vv small{font-size:12px;font-weight:400;color:var(--tx3);margin-left:2px}
+  .adm-kpi .k .sub{font-size:11px;color:var(--tx3);margin-top:4px}
+  .adm-form{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 16px}
+  .adm-form .ff label{display:block;font-size:11.5px;color:var(--tx2);margin-bottom:5px}
+  .adm-form .ff input,.adm-form .ff select{width:100%;padding:6px 9px;font-size:12.5px}
+  .adm-form .ff .hint{font-size:10.5px;color:var(--tx3);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">AIGC 出图工作台<small>复现演示版</small></div>
+    <nav class="nav" id="nav">
+      <a data-v="gen" class="on"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.4" y="3.2" width="11.2" height="9.6" rx="1.8"/><circle cx="5.7" cy="6.4" r="1.05"/><path d="M3 11.1l2.5-2.2 2.1 1.8 2.5-2.5 2.5 2.3"/></svg></span>出图</a>
+      <a data-v="batch"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.4" y="2.8" width="11.2" height="10.4" rx="1.8"/><path d="M2.4 6.2h11.2M2.4 9.6h11.2M6.2 6.2v7M9.8 6.2v7"/></svg></span>批量生成</a>
+      <a data-v="t2i"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 13.4l6.2-6.2"/><path d="M9.4 2.6l.62 1.58L11.6 4.8l-1.58.62L9.4 7l-.62-1.58L7.2 4.8l1.58-.62z"/><path d="M12.9 8.6l.42 1.08 1.08.42-1.08.42-.42 1.08-.42-1.08L11.4 10.1l1.08-.42z"/></svg></span>文生图 · 图生图</a>
+      <a data-v="lib"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.4 5.3A1.5 1.5 0 0 1 3.9 3.8h2.3l1.3 1.5h4.5a1.5 1.5 0 0 1 1.5 1.5v4.4a1.5 1.5 0 0 1-1.5 1.5H3.9a1.5 1.5 0 0 1-1.5-1.5z"/></svg></span>素材库</a>
+      <a data-v="logs"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="5.6"/><path d="M8 4.8V8l2.2 1.4"/></svg></span>操作日志</a>
+      <a data-v="admin"><span class="ico"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.6" cy="4.4" r="1.25"/><circle cx="10.4" cy="8" r="1.25"/><circle cx="7.2" cy="11.6" r="1.25"/><path d="M2.6 4.4h1.75M6.85 4.4h6.55M2.6 8h6.55M11.65 8h1.75M2.6 11.6h3.35M8.45 11.6h4.95"/></svg></span>后台管理</a>
+    </nav>
+    <div class="sidefoot">
+      <div class="r"><span>环境</span><b class="env" id="sfEnv"><i></i>联调模式</b></div>
+      <div class="r"><span>项目</span><b id="sfProj">—</b></div>
+      <div class="r"><span>版本</span><b id="sfVer">v0.4</b></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <span class="title" id="pageTitle">出图</span>
+      <span class="crumb" id="pageCrumb"></span>
+      <span class="modesw" id="modeSw" title="运行中切换：正式＝真调模型 API（计费）；联调＝出占位图（不联网、不计费）">
+        <b class="mo" data-mo="0">正式</b><b class="mo" data-mo="1">联调</b>
+      </span>
+      <span id="mockBadge" class="badge b-mid hidden"
+            title="当前为联调模式：产出为程序绘制的占位图，不调用模型 API、不产生费用；真图走完全相同的落盘 / 登记 / 入库路径">联调 · 未调 API</span>
+      <span class="grow"></span>
+      <span class="proj">当前项目
+        <select id="projSel"></select>
+      </span>
+      <button id="btnNewProj">＋ 新建项目</button>
+      <span class="emp">👤 id <input id="empId" value="lin.design"></span>
+    </header>
+
+    <!-- ============ 出图 ============ -->
+    <section class="view on" id="v-gen">
+     <div class="genwrap"><div class="genmain">
+      <div class="steps" id="steps">
+        <span data-s="1">① 导入参考图</span><span data-s="2">② 提取提示词</span>
+        <span data-s="3">③ 出两条支线</span><span data-s="4">④ 收集镜头组</span>
+        <span data-s="5">⑤ 组合成品</span><span data-s="6">⑥ 沉淀入库</span>
+      </div>
+
+      <!-- ① 生成预览（最大） -->
+      <div class="preview">
+        <div class="pgrid">
+          <div class="pcard" id="pcPerson" data-drop="person" title="可把任意图片拖进来，设为模特基础照">
+            <div class="h"><b>支线 A · 模特基础照</b><span id="stPerson" class="badge b-none">未生成</span></div>
+            <div class="body" id="bdPerson"><div class="ph">正面直立 A-pose 素模特<br>（只穿贴身衣物）<br><span style="color:var(--brand)">或把图片拖进来</span></div></div>
+          </div>
+          <div class="parrow">‖</div>
+          <div class="pcard" id="pcScene" data-drop="scene" title="可把任意图片拖进来，设为初版场景">
+            <div class="h"><b>支线 B · 初版场景</b><span id="stScene" class="badge b-none">未生成</span></div>
+            <div class="body" id="bdScene"><div class="ph">与模特支线<br>互不依赖<br><span style="color:var(--brand)">或把图片拖进来</span></div></div>
+          </div>
+          <div class="parrow">→</div>
+          <div class="pcard" id="pcFinal">
+            <div class="h"><b>组合成品</b><span class="stwrap"><span id="stFinal" class="badge b-none">未生成</span><span id="stSaved" class="badge b-none">未入库</span></span></div>
+            <div class="body" id="bdFinal"><div class="ph">款 × 形象 × 场景<br><code>第 ⑤ 步才进来具体商品</code></div></div>
+          </div>
+        </div>
+        <div class="shotstrip" id="shotStrip">
+          <div class="ss-h">
+            <b>视觉模板 · 镜头组</b><span class="badge b-none" id="ssCount">空</span>
+            <span class="ss-sub">一个形象 × 同一个场景 × 不同动作 / 沟通图 —— 做好一个镜头就把图<b>拖进来</b>；这一组做完，才拿去和产品图批量组合</span>
+          </div>
+          <div class="ss-body" id="ssBody" data-drop="shot"><span class="empty">初始为空 · 把任意图片拖进来，每拖一张＝一个镜头</span></div>
+        </div>
+        <div class="pfoot">
+          <span class="hint" id="pfHint">走完 ②③④ 后，把这一轮沉淀成一份可复用配方</span>
+          <button id="btnSave" class="primary" disabled>保存入库（沉淀配方）</button>
+        </div>
+      </div>
+
+      <!-- ②③④ -->
+      <div class="row3">
+        <div class="panel">
+          <h3>② 项目素材 <span class="tag">只存放图 · 不参与提示词提取</span></h3>
+          <div class="thumbs" id="thumbs"></div>
+          <input type="file" id="fileRef" accept="image/*" multiple hidden>
+        </div>
+
+        <div class="panel">
+          <h3>③ 提示词 <span class="tag">每段各自提取 · 可手改</span></h3>
+          <div class="refslots">
+            <div class="refslot">
+              <div class="rs-lb">模特参考图 <span class="tag" style="color:var(--tx3)">→ 形象</span></div>
+              <div class="thumbs" id="slotModel"></div>
+              <input type="file" id="fileModel" accept="image/*" hidden>
+            </div>
+            <div class="refslot">
+              <div class="rs-lb">场景参考图 <span class="tag" style="color:var(--tx3)">→ 场景</span></div>
+              <div class="thumbs" id="slotScene"></div>
+              <input type="file" id="fileScene" accept="image/*" hidden>
+            </div>
+            <div class="refslot">
+              <div class="rs-lb">上架产品图 <span class="tag" style="color:var(--tx3)">→ 产品</span></div>
+              <div class="thumbs" id="slotProduct"></div>
+              <input type="file" id="fileProduct" accept="image/*" hidden>
+            </div>
+          </div>
+          <div class="fld"><div class="fld-h"><label>形象提示词 <span class="tag" style="color:var(--tx3)">什么人</span></label><button class="mini" id="btnExPerson">提取</button></div><textarea id="pPerson" placeholder="点「提取」读模特参考图反推，或直接输入"></textarea></div>
+          <div class="fld"><div class="fld-h"><label>场景提示词 <span class="tag" style="color:var(--tx3)">什么场景</span></label><button class="mini" id="btnExScene">提取</button></div><textarea id="pScene" placeholder="点「提取」读场景参考图反推，或直接输入"></textarea></div>
+          <div class="fld"><div class="fld-h"><label>产品提示词 <span class="tag" style="color:var(--tx3)">穿着什么 · 产品细节</span></label><button class="mini" id="btnExProduct">提取</button></div><textarea id="pProduct" placeholder="点「提取」读上架产品图反推，或直接输入"></textarea></div>
+          <div class="fld"><div class="fld-h"><label>动作构图提示词 <span class="tag" style="color:var(--tx3)">在做什么</span></label><button class="mini" id="btnExAction">提取</button></div><textarea id="pAction" placeholder="点「提取」读模特参考图反推动作/构图，或直接输入"></textarea></div>
+          <div id="extractSrc" class="dim" style="font-size:11.5px;margin-top:9px;line-height:1.55"></div>
+        </div>
+
+        <div class="panel">
+          <h3>④ 生成控制</h3>
+          <div class="fld"><label>输出尺寸 <span class="tag" style="color:var(--tx3)">支线与成品共用</span></label>
+            <select id="genRatio" style="width:100%"></select></div>
+          <p class="subttl">── 两条支线（可并行、互不依赖）──</p>
+          <div class="btnrow">
+            <button id="btnPerson">生成模特基础照</button>
+            <button id="btnScene">生成初版场景</button>
+          </div>
+          <div class="sep"></div>
+          <p class="subttl">── 组合生成 ──</p>
+          <div class="fld"><label>组合提示词 <span class="tag">＝ 人 ＋ 场景 ＋ 产品 ＋ 动作</span></label>
+            <div class="combobox" id="pCombo"></div></div>
+          <div class="fld"><label>要上架的款（SKU）</label><input id="inSku" placeholder="如 KN-1001-S"></div>
+          <button id="btnCompose" class="primary" style="width:100%">▶ 组合生成</button>
+        </div>
+      </div>
+     </div>
+     <aside class="roundbar">
+       <h3>轮次记录</h3>
+       <p class="rtip" id="rtipChain">单击看大图 · 双击带回对比</p>
+       <div class="rlist" id="rlistChain"></div>
+     </aside>
+     </div>
+    </section>
+
+    <!-- ============ 批量生成 ============ -->
+    <section class="view" id="v-batch">
+      <div class="toolbar">
+        <b>批量生成</b>
+        <span style="color:#9aa1ab;font-size:12px">出图页把配方「造」好 → 这里拿它铺一批款；跑完在每一行「标记合格」，一批 ≈ 40 个 SKU</span>
+      </div>
+
+      <!-- 视觉模板：固定部分（只读）＋ 该模板的镜头组 -->
+      <div class="btpl">
+        <div class="btpl-head">
+          <label>用哪份视觉模板 <select id="bRecipe"></select></label>
+          <span class="badge b-none" id="bTplShots">0 张镜头</span>
+          <span class="grow"></span>
+          <span class="btpl-note">模板固定的是「人 ＋ 景 ＋ 动作」；每一行只换「产品」</span>
+        </div>
+        <div class="btpl-fixed">
+          <div class="ff"><div class="lb">形象提示词 <span class="tag">固定 · 来自视觉模板</span></div>
+            <div class="ro" id="bPerson">—</div></div>
+          <div class="ff"><div class="lb">场景提示词 <span class="tag">固定 · 来自视觉模板</span></div>
+            <div class="ro" id="bScene">—</div></div>
+          <div class="ff"><div class="lb">动作构图提示词 <span class="tag">固定 · 来自视觉模板</span></div>
+            <div class="ro" id="bAction">—</div></div>
+        </div>
+        <div class="btpl-shots" id="bShots"><span class="empty">这份视觉模板还没有镜头图</span></div>
+      </div>
+
+      <div class="toolbar" style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:10px 12px">
+        <span style="color:#6b7280;font-size:12px">图类型：<b style="color:#1f2329">成品图</b>
+          <span class="th-tag">组合词 ＝ 人 ＋ 场景 ＋ 本行产品 ＋ 动作</span></span>
+        <span class="grow"></span>
+        <button id="btnBAdd">＋ 添加一行</button>
+        <button id="btnBPaste">粘贴款清单</button>
+        <button id="btnBFill40">预置 40 行</button>
+        <button id="btnBClear">清空</button>
+        <button id="btnBRun" class="primary">▶ 开始批量生成</button>
+        <button id="btnBPass" class="good" title="把勾选且已出图的行标记为「合格」">✓ 标记合格</button>
+        <button id="btnBRedo" title="把勾选且已出图的行标记为「需重做」">↺ 标记重做</button>
+      </div>
+      <p class="subttl" id="bSummary">共 0 行 · 已勾选 0 行</p>
+      <div class="bprog" id="bProg" style="display:none"><i id="bProgBar"></i></div>
+      <table class="btable" style="margin-top:10px">
+        <thead><tr>
+          <th style="width:34px"><input type="checkbox" id="bAll" style="width:auto"></th>
+          <th style="width:146px">款号（SKU）</th>
+          <th style="width:246px">产品提示词 <span class="th-tag">逐行 · 可改</span></th>
+          <th>组合生成提示词 <span class="th-tag">＝ 人 ＋ 场景 ＋ 本行产品 ＋ 动作</span></th>
+          <th style="width:92px">状态</th>
+          <th style="width:64px">耗时</th>
+          <th style="width:110px">验收</th>
+          <th style="width:68px">结果</th>
+          <th style="width:44px"></th>
+        </tr></thead>
+        <tbody id="bBody"></tbody>
+      </table>
+    </section>
+
+    <!-- ============ 文生图 · 图生图 ============ -->
+    <section class="view" id="v-t2i">
+     <div class="genwrap"><div class="genmain">
+      <div class="preview">
+        <div class="pcard">
+          <div class="h"><b id="ptTitle">生成结果</b><span id="stPlain" class="badge b-none">未生成</span></div>
+          <div class="body" id="bdPlain"><div class="ph">导入图片 → 图生图（编辑这张图）<br>不导入 → 文生图（只写文字）</div></div>
+        </div>
+        <div class="pfoot">
+          <span class="hint" id="pfPlain">没有图片素材 → 纯文生图；导入图片 → 图生图</span>
+          <button id="btnPlain" class="primary">▶ 生成</button>
+        </div>
+      </div>
+      <div class="row3">
+        <div class="panel">
+          <h3>图片素材 <span class="tag">可多张 · 不导入＝纯文生图</span></h3>
+          <div class="thumbs" id="thumbsFree"></div>
+          <input type="file" id="fileFree" accept="image/*" multiple hidden>
+        </div>
+        <div class="panel">
+          <h3>提示词 <span class="tag">想改成什么样，直接写</span></h3>
+          <textarea id="pPlain" style="min-height:150px" placeholder="例：保留产品原样不变形，背景换成浅灰、柔和侧光，画面干净"></textarea>
+        </div>
+        <div class="panel">
+          <h3>输出规格</h3>
+          <div class="fld"><label>图片比例</label><select id="plainRatio"></select></div>
+          <div class="fld"><label>清晰度</label><select id="plainSize">
+            <option value="1K">1K</option><option value="2K" selected>2K</option><option value="4K">4K</option>
+          </select></div>
+          <div class="fld"><label>生成模型</label><select id="plainEp">
+            <option value="seedream">Seedream（多图融合）</option>
+            <option value="gemini">Gemini（人物 / 融合）</option>
+            <option value="openai">GPT Image（编辑）</option>
+          </select></div>
+          <p class="subttl" id="plainSpec">输出尺寸 2048×2048</p>
+        </div>
+      </div>
+     </div>
+     <aside class="roundbar">
+       <h3>轮次记录</h3>
+       <p class="rtip" id="rtipFree">单击看大图 · 双击带回对比</p>
+       <div class="rlist" id="rlistFree"></div>
+     </aside>
+     </div>
+    </section>
+
+    <!-- ============ 素材库 ============ -->
+    <section class="view" id="v-lib">
+      <div class="toolbar">
+        <b>素材库 · 按配方分组</b>
+        <span class="tag" style="color:#9aa1ab;font-size:12px">一份配方一张卡，卡面挂效果数据；点开看它出过的所有图</span>
+        <span class="grow"></span>
+        <label>排序
+          <select id="libSort">
+            <option value="recent">最近生成</option>
+            <option value="ctr">点击率 ↓</option>
+            <option value="cvr">转化率 ↓</option>
+            <option value="sales">销售 ↓</option>
+            <option value="count">产出张数 ↓</option>
+          </select>
+        </label>
+        <label>筛选
+          <select id="libFilter">
+            <option value="all">全部</option>
+            <option value="good">可再用</option>
+            <option value="mid">一般</option>
+            <option value="none">未回填效果</option>
+          </select>
+        </label>
+        <button id="btnImportPerf">导入效果数据</button>
+        <button onclick="renderLib()">刷新</button>
+      </div>
+      <div class="libgrid" id="libgrid"></div>
+    </section>
+
+    <!-- ============ 操作日志 ============ -->
+    <section class="view" id="v-logs">
+      <div class="toolbar"><b>操作日志</b><span class="grow"></span><button onclick="renderLogs()">刷新</button></div>
+      <div id="logsWrap"></div>
+    </section>
+
+    <!-- ============ 后台管理 ============ -->
+    <section class="view" id="v-admin">
+      <div class="toolbar">
+        <b>后台管理</b>
+        <span class="tag">模型 · 节点 · 成员 · 全局配置</span>
+        <span class="grow"></span>
+        <span class="adm-stamp" id="admStamp">—</span>
+        <button onclick="renderAdmin()">刷新</button>
+      </div>
+
+      <!-- A · 模型与节点 -->
+      <div class="panel adm-sec">
+        <h3>模型与节点<span class="tag">多模型编排 · 按图类型分工</span>
+          <span class="adm-grow"></span>
+          <span class="adm-strat">调度策略：<b id="admStrategy">—</b></span></h3>
+        <div class="adm-2col">
+          <div>
+            <p class="subttl">模型清单<span style="font-weight:400">（点开关即启停）</span></p>
+            <table class="admtbl"><thead><tr>
+              <th>模型</th><th>接入方</th><th>用途</th><th>单价</th><th>优先级</th><th>启用</th></tr></thead>
+              <tbody id="admModels"></tbody></table>
+          </div>
+          <div>
+            <p class="subttl">节点健康<span style="font-weight:400">（联调态为模拟探针）</span></p>
+            <table class="admtbl"><thead><tr>
+              <th>节点</th><th>承载模型</th><th>延迟</th><th>成功率</th><th>故障转移</th><th>状态</th></tr></thead>
+              <tbody id="admNodes"></tbody></table>
+            <div style="margin-top:9px;display:flex;gap:9px;align-items:center">
+              <button id="btnAdmProbe" onclick="adminProbe(this)">节点测速</button>
+              <span class="adm-note" id="admProbeAt"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- B · 成员与配额 -->
+      <div class="panel adm-sec">
+        <h3>成员与配额<span class="tag">谁在用 · 用到哪</span>
+          <span class="adm-grow"></span>
+          <span class="adm-note">本月配额用量由计费系统同步（外部数据）</span></h3>
+        <table class="admtbl"><thead><tr>
+          <th>员工 id</th><th>姓名</th><th>角色</th><th>可用模型</th><th>本月配额</th><th>已用</th>
+          <th style="width:120px">使用率</th><th>状态</th></tr></thead>
+          <tbody id="admMembers"></tbody></table>
+      </div>
+
+      <!-- C · 用量与成本 -->
+      <div class="panel adm-sec">
+        <h3>用量与成本<span class="tag">按配置单价现算 · 不落盘</span></h3>
+        <div class="adm-kpi" id="admKpi"></div>
+        <div class="adm-2col" style="margin-top:14px">
+          <div>
+            <p class="subttl">按模型拆分</p>
+            <table class="admtbl"><thead><tr>
+              <th>模型</th><th>张数</th><th>单价</th><th>小计</th><th style="width:104px">占比</th></tr></thead>
+              <tbody id="admCostModel"></tbody></table>
+          </div>
+          <div>
+            <p class="subttl">按项目拆分</p>
+            <table class="admtbl"><thead><tr>
+              <th>项目</th><th>张数</th><th>小计</th><th style="width:104px">占比</th></tr></thead>
+              <tbody id="admCostProj"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- D · 全局配置 -->
+      <div class="panel adm-sec">
+        <h3>全局配置<span class="tag">改完点保存 · 立即生效</span></h3>
+        <div class="adm-form" id="admForm"></div>
+        <div style="margin-top:13px;display:flex;gap:9px;align-items:center">
+          <button class="primary" onclick="adminSaveConfig(this)">保存全局配置</button>
+          <span class="adm-note" id="admSavedAt"></span>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+<!-- ============ 配方详情抽屉 ============ -->
+<div class="drmask" id="drmask" onclick="closeDrawer()"></div>
+<aside class="drawer" id="drawer">
+  <div class="dr-head">
+    <b id="drName">配方</b>
+    <span id="drBadge" class="badge b-none">—</span>
+    <span class="grow"></span>
+    <button onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="dr-body" id="drBody"></div>
+  <div class="dr-foot">
+    <button onclick="closeDrawer()">关闭</button>
+    <button id="drReuse" class="primary">复用这份配方</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast"></div>
+
+<!-- 图片灯箱：点第一页任意图放大 -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <span class="lb-x" title="关闭（Esc）">✕</span>
+  <img id="lbImg" src="" alt="">
+  <div class="lb-cap" id="lbCap"></div>
+</div>
+
+<script>
+const S = { pid:"", emp:"lin.design", assets:[], recipes:[], perf:[], rounds:[], freeInputs:[],
+            person:null, scene:null, final:null, plain:null, shots:[],
+            libSort:"recent", libFilter:"all", reuseRid:"",
+            activeRound:"", plainRatio:"1:1", plainSize:"2K", batch:[], mock:false };
+const TYPE_CN = {ref:"参考图", base_person:"模特基础照", base_scene:"初版场景",
+                 shot:"模板镜头", final:"成品", free_out:"自由出图"};
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+/* 模型名显示：默认给"产品友好名"，完整技术 id 收进 title 悬停。
+   🔑 口径不变 —— 多模型路由本身是卖点，只是别把一长串 id 砸在每一屏。 */
+const MODEL_FRIENDLY = {
+  "doubao-seedream-5-0-pro-260628":"Seedream 5.0 Pro",
+  "seedream-5-0-pro":"Seedream 5.0 Pro",
+  "gemini-2.5-flash-image":"Gemini 2.5 Flash Image",
+  "gpt-image-1":"GPT Image 1",
+  "flux-2":"FLUX.2",
+  "flux-2-pro":"FLUX.2",
+  "bria-rmbg-2.0":"RMBG-2.0",
+  "doubao-seed-1-6-vision-250815":"Doubao Seed 1.6 Vision",
+  "doubao-seed-1-6-vision":"Doubao Seed 1.6 Vision",
+  "vision-extract":"内置规则（未调模型）"
+};
+/* 去掉内部的联调 / 网关痕迹（老数据里可能带 (artsapi:无key)）—— 只留真实模型名 */
+function fmtModel(m){
+  const raw = String(m==null?"":m).replace(/\s*[（(][^）)]*(?:无\s*key|mock|artsapi|联调)[^）)]*[）)]\s*/gi,"").trim();
+  if(!raw) return "—";
+  return MODEL_FRIENDLY[raw] || raw;
+}
+/* 渲染模型名：友好名 + 悬停显示完整 id */
+function modelTag(m){
+  const raw = String(m==null?"":m).trim();
+  if(!raw) return "—";
+  const f = fmtModel(raw);
+  return `<span class="mtag" title="${esc(raw)}">${esc(f)}</span>`;
+}
+/* 耗时：联调态不产生真实耗时 → 统一「—」（不再出现 0s 这种一眼假的数据） */
+function fmtSec(v){
+  if(S.mock) return "—";
+  const n = Number(v);
+  if(v === "" || v == null || isNaN(n) || n <= 0) return "—";
+  return n.toFixed(1) + "s";
+}
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("on"); clearTimeout(t._x); t._x=setTimeout(()=>t.classList.remove("on"),2600); }
+async function api(path, body){
+  const opt = body ? {method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)} : {};
+  const r = await fetch(path, opt);
+  return r.json();
+}
+const imgUrl = f => f ? "/files/"+encodeURIComponent(f) : "";
+
+/* ---------- 运行中切换「正式 / 联调」----------
+   现场兜底用：演示前先跑一遍，发现出图慢 / 断网 / 心疼钱，一下就切到联调
+   （不联网、不计费、出占位图）；修好再切回正式。**不用重启服务、不用改启动参数。** */
+function paintMode(){
+  const mock = !!S.mock;
+  const anyKey = Object.values(S.keys || {}).some(Boolean);
+  document.querySelectorAll("#modeSw .mo").forEach(el=>{
+    const on = (el.dataset.mo === "1") === mock;
+    el.classList.toggle("on", on);
+    el.classList.toggle("warn", on && mock);
+  });
+  const mbid = $("mockBadge"); if(mbid) mbid.classList.toggle("hidden", !mock);
+  const sf = $("sfEnv");
+  if(sf && S.keys){   // state 未加载前不动侧栏那行，避免闪一下「无 key」
+    sf.innerHTML = `<i></i>${mock ? "联调模式" : (anyKey ? "已接入模型" : "无 key · 出占位图")}`;
+    sf.style.color = (!mock && anyKey) ? "var(--ok)" : "var(--warn)";
+  }
+}
+
+async function setMode(mock){
+  mock = !!mock;
+  if(mock === !!S.mock) return;
+  const r = await api("/api/mode", {mock});
+  if(!r || !r.ok){ toast("模式切换失败，请重试"); return; }
+  S.mock = !!r.mock_mode; S.keys = r.keys || {};
+  paintMode();
+  toast(r.note || (mock ? "已切到联调模式" : "已切到正式模式"));
+}
+
+$("modeSw").addEventListener("click", e=>{
+  const b = e.target.closest(".mo"); if(!b) return;
+  setMode(b.dataset.mo === "1");
+});
+
+/* ---------- 导航 ---------- */
+const PAGE = {
+  gen:  ["出图", "两条支线并行 → 组合成品 → 沉淀配方"],
+  batch:["批量生成", "一份配方 × N 个款，逐行出图"],
+  t2i:  ["文生图 · 图生图", "纯图片编辑 · 不走配方链路"],
+  lib:  ["素材库", "按配方分组 · 配方是产出单元"],
+  logs: ["操作日志", "全量操作流水"],
+  admin:["后台管理", "模型 · 节点 · 成员 · 全局配置"]
+};
+function switchView(v){
+  const a = document.querySelector(`#nav a[data-v="${v}"]`); if(!a) return;
+  document.querySelectorAll("#nav a").forEach(x=>x.classList.toggle("on", x===a));
+  document.querySelectorAll(".view").forEach(x=>x.classList.remove("on"));
+  $("v-"+v).classList.add("on");
+  const pg = PAGE[v]; if(pg){ $("pageTitle").textContent = pg[0]; $("pageCrumb").textContent = pg[1]; }
+  if(location.hash !== "#"+v) location.hash = v;
+  if(v==="gen"){ paintPreview(); paintGate(); renderRounds("chain"); }
+  if(v==="batch") renderBatch();
+  if(v==="t2i"){ paintPlain(); renderThumbsFree(); renderRounds("free"); }
+  if(v==="lib") renderLib();
+  if(v==="logs") renderLogs();
+  if(v==="admin") renderAdmin();
+}
+$("nav").addEventListener("click", e=>{
+  const a = e.target.closest("a[data-v]"); if(!a) return;
+  switchView(a.dataset.v);
+});
+window.addEventListener("hashchange", ()=>{ const v=location.hash.slice(1); if(v) switchView(v); });
+
+/* ---------- 项目 ---------- */
+$("empId").addEventListener("change", ()=>{ S.emp=$("empId").value.trim()||"lin.design"; });
+$("projSel").addEventListener("change", ()=> selectProject($("projSel").value));
+$("btnNewProj").addEventListener("click", async ()=>{
+  const name = prompt("新项目名称：", "项目-"+new Date().toLocaleDateString());
+  if(!name) return;
+  const r = await api("/api/project_create", {name, employee_id:S.emp});
+  if(r.ok){ toast("已创建项目："+r.project.name); await boot(r.project.project_id); }
+});
+
+async function boot(preferPid){
+  const st = await api("/api/state?project_id=");
+  const sel = $("projSel");
+  sel.innerHTML = st.projects.map(p=>`<option value="${p.project_id}">${esc(p.name)}</option>`).join("");
+  if(!st.projects.length){ toast("尚无项目，请先新建"); return; }
+  const pid = preferPid || (S.pid || st.projects[0].project_id);
+  sel.value = pid;
+  await selectProject(pid);
+  const h = location.hash.slice(1);
+  if(h){
+    const [v, arg] = h.split("/");
+    switchView(v);
+    if(arg) setTimeout(()=>openRecipe(decodeURIComponent(arg)), 350);   // #lib/<配方id> 直达该配方详情
+  }
+}
+
+async function selectProject(pid){
+  S.pid = pid; S.person=S.scene=S.final=null; S.plain=null; S.reuseRid=""; S.activeRound="";
+  S.batch = [];
+  paintCombo(); paintPreview(); paintPlain();
+  const st = await api("/api/state?project_id="+encodeURIComponent(pid));
+  S.assets = st.assets; S.recipes = st.recipes; S.perf = st.performance;
+  S.rounds = st.rounds || []; S.freeInputs = st.free_inputs || [];
+  S.batch = st.batch_rows || [];
+  S.mock = !!st.mock_mode;
+  S.keys = st.keys || {};
+  paintMode();
+  const _p = (st.projects || []).find(x=>x.project_id === pid);
+  $("sfProj").textContent = _p ? _p.name : "—";
+  $("sfProj").title = _p ? _p.name : "";
+  renderThumbs(); renderRoleSlots(); renderThumbsFree(); renderBatchRecipeSel(); renderBatch();
+  paintSteps(); paintGate(); renderRounds("chain"); renderRounds("free");
+}
+
+async function refreshAssets(){
+  const st = await api("/api/state?project_id="+encodeURIComponent(S.pid));
+  S.assets = st.assets; S.recipes = st.recipes; S.perf = st.performance;
+  S.rounds = st.rounds || []; S.freeInputs = st.free_inputs || [];
+  renderThumbs(); renderRoleSlots(); renderThumbsFree(); renderBatchRecipeSel(); renderBatch();
+  paintGate(); renderRounds("chain"); renderRounds("free"); paintSteps();
+}
+
+/* ---------- ② 参考图 ---------- */
+$("thumbs").addEventListener("click", e=>{ if(e.target.closest(".th.up")) $("fileRef").click(); });
+$("fileRef").addEventListener("change", async e=>{
+  const files = [...e.target.files];
+  for(const f of files){
+    const b64 = await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.readAsDataURL(f); });
+    await api("/api/upload_ref", {project_id:S.pid, name:f.name, data:b64});
+  }
+  toast("已导入 "+files.length+" 张参考图");
+  await refreshAssets();
+  e.target.value="";
+});
+function renderThumbs(){
+  // 🔴 项目素材＝只存放图（不参与提示词提取）→ 只显示「无角色」的 ref（ref_role 为空）
+  const refs = S.assets.filter(a=>a.type==="ref" && !a.ref_role);
+  $("thumbs").innerHTML = refs.map(a=>`<div class="th">
+      <img src="${imgUrl(a.file)}" data-aid="${esc(a.asset_id)}" draggable="true" title="点击放大 · 可拖拽">
+      <span class="thx" title="删除这张参考图" onclick="delRef('${esc(a.asset_id)}',event)">✕</span></div>`).join("")
+     + `<div class="th up" title="导入参考图（仅存放，不参与提取）">＋</div>`;
+}
+/* 三个「提取参考图」位：模特(model) / 场景(scene) / 产品(product) 各一个独立上传格 */
+const ROLE_SLOTS = [["model","slotModel"],["scene","slotScene"],["product","slotProduct"]];
+const ROLE_LABEL = {model:"模特参考图", scene:"场景参考图", product:"上架产品图"};
+function renderRoleSlots(){
+  for(const [role, el] of ROLE_SLOTS){
+    const refs = S.assets.filter(a=>a.type==="ref" && a.ref_role===role);
+    $(el).innerHTML = refs.map(a=>`<div class="th">
+      <img src="${imgUrl(a.file)}" data-aid="${esc(a.asset_id)}" draggable="true" title="点击放大">
+      <span class="thx" title="删除这张" onclick="delRef('${esc(a.asset_id)}',event)">✕</span></div>`).join("")
+     + `<div class="th up" title="上传${ROLE_LABEL[role]}">＋</div>`;
+  }
+}
+/* 删除一张**导入类**参考图（真删，后端连带删文件）—— 悬浮在缩略图右上角 */
+window.delRef = async (aid, e)=>{
+  if(e) e.stopPropagation();
+  if(!confirm("删除这张参考图？")) return;
+  const r = await api("/api/asset_delete", {asset_id:aid});
+  if(r.ok){ toast("已删除"); await refreshAssets(); } else toast(r.error || "删除失败");
+};
+
+/* ---------- ③ 提取提示词（每个区块一个按钮，各读各的图）
+   🔴 真调视觉模型读对应参考图反推单段；失败或没图 → 回落内置规则，界面如实标来源。
+   动作构图也走这里：读「模特参考图」反推姿势 / 机位 / 景别（同样没图时回落内置默认词）。 ---------- */
+const EX_FIELD = {person:["btnExPerson","pPerson"], scene:["btnExScene","pScene"], product:["btnExProduct","pProduct"], action:["btnExAction","pAction"]};
+const EX_TOAST = {person:"形象", scene:"场景", product:"产品", action:"动作"};
+function extractOne(field){
+  const [bid, pid] = EX_FIELD[field];
+  const btn = $(bid);
+  busy(btn, true, "识别中…");
+  return api("/api/extract", {project_id:S.pid, employee_id:S.emp, field}).then(r=>{
+    busy(btn, false);
+    if(!r || !r.ok){ toast("提取失败：" + ((r&&r.error)||"未知")); return; }
+    $(pid).value = r.prompt || "";
+    const srcEl = $("extractSrc");
+    if(r.source === "vlm"){
+      srcEl.innerHTML = `【${EX_TOAST[field]}】已由 <b>${esc(fmtModel(r.model_name))}</b> 读 ${r.ref_count} 张参考图反推 <span class="dim">· 可手改</span>`;
+    } else {
+      srcEl.innerHTML = `【${EX_TOAST[field]}】<b>内置规则</b>（未调用视觉模型`
+        + (r.vlm_error ? `：${esc(r.vlm_error)}` : "") + `）<span class="dim">· 上传对应参考图并配好 key 后换成模型反推</span>`;
+    }
+    paintCombo(); paintSteps();
+    toast(r.source === "vlm" ? EX_TOAST[field]+"提示词已由视觉模型反推" : EX_TOAST[field]+"提示词已按内置规则填入（可手改）");
+  });
+}
+$("btnExPerson").addEventListener("click", ()=>extractOne("person"));
+$("btnExScene").addEventListener("click", ()=>extractOne("scene"));
+$("btnExProduct").addEventListener("click", ()=>extractOne("product"));
+$("btnExAction").addEventListener("click", ()=>extractOne("action"));
+["pPerson","pScene","pProduct","pAction"].forEach(id=>$(id).addEventListener("input", paintCombo));
+
+/* ---------- 三个「提取参考图」位：独立上传（带 role） ---------- */
+const ROLE_FILES = {model:"fileModel", scene:"fileScene", product:"fileProduct"};
+for(const [role, el] of ROLE_SLOTS){
+  const fid = ROLE_FILES[role];
+  $(el).addEventListener("click", e=>{ if(e.target.closest(".th.up")) $(fid).click(); });
+  $(fid).addEventListener("change", async e=>{
+    const files = [...e.target.files];
+    for(const f of files){
+      const b64 = await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.readAsDataURL(f); });
+      await api("/api/upload_ref", {project_id:S.pid, name:f.name, data:b64, role});
+    }
+    toast(`已上传 ${ROLE_LABEL[role]}`);
+    await refreshAssets();
+    e.target.value="";
+  });
+}
+
+/* ---------- ④ 生成 ---------- */
+function busy(btn, on, txt){ btn.disabled=on; if(on){ btn._t=btn.textContent; btn.textContent=txt||"生成中…"; } else btn.textContent=btn._t||btn.textContent; }
+function paintCard(which, asset){
+  const bd = $("bd"+which), st = $("st"+which);
+  if(asset && asset.file){
+    bd.innerHTML = `<img src="${imgUrl(asset.file)}" data-aid="${esc(asset.asset_id||"")}" draggable="true" title="点击放大 · 可拖到别的框">`;
+    st.className = "badge b-mid"; st.textContent = "已生成";
+  } else if(asset){
+    bd.innerHTML = `<div class="ph">联调模式：未调真实生图<br><code>${esc((asset.prompt_used||"").slice(0,60))}…</code></div>`;
+    st.className = "badge b-none"; st.textContent = "占位";
+  } else {
+    st.className="badge b-none"; st.textContent="未生成";
+  }
+}
+/* 成品卡：两个维度分开显示 —— ① 确认（这一张挑没挑过）② 入库（这份配方是否沉淀） */
+function paintFinal(asset){
+  const bd = $("bdFinal"), st = $("stFinal"), sv = $("stSaved");
+  if(asset && asset.file) bd.innerHTML = `<img src="${imgUrl(asset.file)}" data-aid="${esc(asset.asset_id||"")}" draggable="true" title="点击放大 · 可拖到别的框">`;
+  else if(asset) bd.innerHTML = `<div class="ph">联调模式：未调真实生图<br><code>${esc((asset.prompt_used||"").slice(0,60))}…</code></div>`;
+  else bd.innerHTML = `<div class="ph">款 × 形象 × 场景<br><code>第 ④ 步才进来具体商品</code></div>`;
+  const qc = asset ? (asset.qc_status || "") : "";
+  if(qc === "ok"){ st.className="badge b-good"; st.textContent="已确认 ✓"; }
+  else if(qc === "fail"){ st.className="badge b-mid"; st.textContent="需重做"; }
+  else { st.className="badge b-none"; st.textContent = asset ? "待标记" : "未生成"; }
+  if(asset && asset.saved){ sv.className="badge b-good"; sv.textContent="已入库"; }
+  else { sv.className="badge b-none"; sv.textContent="未入库"; }
+}
+function paintPreview(){
+  if(S.person) paintCard("Person", S.person); else { $("bdPerson").innerHTML=`<div class="ph">正面直立 A-pose 素模特<br>（只穿贴身衣物）<br><span style="color:var(--brand)">或把图片拖进来</span></div>`; $("stPerson").className="badge b-none"; $("stPerson").textContent="未生成"; }
+  if(S.scene)  paintCard("Scene",  S.scene);  else { $("bdScene").innerHTML=`<div class="ph">与模特支线<br>互不依赖<br><span style="color:var(--brand)">或把图片拖进来</span></div>`; $("stScene").className="badge b-none"; $("stScene").textContent="未生成"; }
+  paintFinal(S.final);
+  paintShots();
+}
+/* 镜头组带：视觉模板的那组图 —— 初始为空，**做好一个镜头就把图拖进来**。
+   「一个视觉模板＝一组图，不是一张」这件事在这里被"看得见"：一组＝一组镜头。 */
+function paintShots(){
+  const box = $("ssBody"), cnt = $("ssCount");
+  if(!box) return;
+  const arr = S.shots || [];
+  if(!arr.length){
+    cnt.className = "badge b-none"; cnt.textContent = "空";
+    box.innerHTML = `<span class="empty">初始为空 · 把任意图片拖进来，每拖一张＝一个镜头</span>`;
+    return;
+  }
+  cnt.className = "badge b-mid"; cnt.textContent = `${arr.length} 个镜头`;
+  box.innerHTML = arr.map((a,i)=>`<div class="ss-i" title="${esc(a.action_prompt||a.prompt_used||"")}">
+      <div class="im">${a.file
+          ? `<img src="${imgUrl(a.file)}" data-aid="${esc(a.asset_id||"")}" draggable="true" title="点击放大 · 可拖到别的框">`
+          : "—"}</div>
+      <div class="cap">${esc(a.action_prompt || ("镜头 "+(a.shot_index||i+1)))}</div>
+      <span class="ssx" title="把这个镜头移出镜头组" onclick="delShot(${i},event)">✕</span></div>`).join("");
+}
+/* 把某个镜头移出镜头组 —— 只动本轮 S.shots，**不删资产**（它可能还被别处引用） */
+window.delShot = (i, e)=>{ if(e) e.stopPropagation(); (S.shots||[]).splice(i,1);
+  paintShots(); paintSteps(); toast("已把一个镜头移出镜头组"); };
+/* 门禁：有成品且未入库 → 就能「保存入库」。
+   🔴 出图页**没有「通过质检」** —— 单张创作是作者自己确认的；
+   批量出图后的「标记合格」在**批量生成页**逐行做。 */
+function paintGate(){
+  const f = S.final, done = !!(f && f.saved);
+  $("btnSave").disabled = !f || done;
+  $("pfHint").textContent =
+      !f      ? "走完 ②③④ 后，把这一轮沉淀成一份可复用配方"
+    : done    ? "已入库：这份配方可在素材库复用，并持续累积它的产出"
+    : "「保存入库」＝把这一轮沉淀成一份可复用配方；之后批量生成就拿它 × N 个款";
+}
+function paintSteps(){
+  const ex = ($("pPerson").value && $("pScene").value) ? 1 : 0;
+  const on = new Set();
+  if(S.assets.some(a=>a.type==="ref")) on.add("1");
+  if(ex) on.add("2");
+  if(S.person || S.scene) on.add("3");
+  if(S.shots && S.shots.length) on.add("4");
+  if(S.final) on.add("5");
+  if(S.final && S.final.saved) on.add("6");
+  document.querySelectorAll("#steps span").forEach(s=>s.classList.toggle("on", on.has(s.dataset.s)));
+}
+
+$("btnPerson").addEventListener("click", async e=>{
+  const p = $("pPerson").value.trim(); if(!p) return toast("请先填写或提取「形象提示词」");
+  busy(e.target, true);
+  const r = await api("/api/gen_base", {project_id:S.pid, employee_id:S.emp, kind:"person", prompt:p, size:genDims()});
+  busy(e.target, false);
+  if(r.asset) S.person = r.asset;
+  paintPreview(); paintSteps(); await refreshAssets();
+  toast(r.ok ? "模特基础照已生成" : (r.mock ? "联调模式：无可用 key，已出占位图（未调真实模型）" : "生成失败："+(r.error||"未知错误")));
+});
+$("btnScene").addEventListener("click", async e=>{
+  const p = $("pScene").value.trim(); if(!p) return toast("请先填写或提取「场景提示词」");
+  busy(e.target, true);
+  const r = await api("/api/gen_base", {project_id:S.pid, employee_id:S.emp, kind:"scene", prompt:p, size:genDims()});
+  busy(e.target, false);
+  if(r.asset) S.scene = r.asset;
+  paintPreview(); paintSteps(); await refreshAssets();
+  toast(r.ok ? "初版场景已生成" : (r.mock ? "联调模式：无可用 key，已出占位图（未调真实模型）" : "生成失败："+(r.error||"未知错误")));
+});
+/* ④ 镜头组不再「一键生成 15 张」——改为**做好一个镜头就把图拖进镜头组带**（见拖拽系统）。
+   理由：真实工作流里镜头是逐个做/挑出来的，批量一键出 15 张是演示期的简化，不对。 */
+$("btnCompose").addEventListener("click", async e=>{
+  if(!S.person && !S.scene) return toast("请先生成至少一条支线（模特 / 场景）");
+  const person = $("pPerson").value.trim(), scene = $("pScene").value.trim(),
+        product = $("pProduct").value.trim(), action = $("pAction").value.trim();
+  if(!product) toast("提示：还没填「产品提示词」—— 组合词会缺产品那一段");
+  busy(e.target, true);
+  const rid = S.reuseRid || "";
+  const r = await api("/api/compose", {project_id:S.pid, employee_id:S.emp, sku:$("inSku").value.trim(),
+      recipe_id:rid,
+      person_asset_id:S.person?S.person.asset_id:"", scene_asset_id:S.scene?S.scene.asset_id:"",
+      person_prompt:person, scene_prompt:scene, product_prompt:product, action_prompt:action,
+      size:genDims()});
+  busy(e.target, false);
+  if(r.asset) S.final = r.asset;
+  paintPreview(); paintSteps(); await refreshAssets();
+  toast(rid ? "已按同一份配方出一张（去素材库点开可见它累计的产出）"
+            : (r.ok ? "组合成品已生成" : (r.mock ? "联调模式：无可用 key，已出占位图（未调真实模型）" : "生成失败："+(r.error||"未知错误"))));
+});
+
+/* ---------- 保存入库（＝把这一轮沉淀成一份可复用配方） ---------- */
+$("btnSave").addEventListener("click", async ()=>{
+  if(!S.final) return toast("还没有成品可入库");
+  const name = prompt("给这份配方（视觉模板）起个名字：", "配方-"+(S.final.sku||new Date().toLocaleTimeString()));
+  if(!name) return;
+  const r = await api("/api/recipe_save", {project_id:S.pid, employee_id:S.emp, name,
+      person_prompt:$("pPerson").value, scene_prompt:$("pScene").value,
+      product_prompt:$("pProduct").value, action_prompt:$("pAction").value,
+      person_asset_id:S.person?S.person.asset_id:"", scene_asset_id:S.scene?S.scene.asset_id:"",
+      final_asset_id:S.final.asset_id,
+      shots:(S.shots||[]).map((a,i)=>({shot_index:a.shot_index||i+1,
+              action:a.action_prompt||("镜头 "+(i+1)), asset_id:a.asset_id})),
+      params:{sku:S.final.sku}});
+  if(r.ok){
+    S.final.saved = true;
+    S.final.qc_status = "ok";   // 保存入库＝作者确认这一张（后端 save_recipe 同步标了）
+    paintPreview(); paintGate(); await refreshAssets();
+    toast("已入库：配方「"+r.recipe.name+"」已沉淀，可在素材库复用");
+  }
+});
+
+/* ---------- 右侧「轮次记录」：每完成一次生成 = 一条（卡内**只留图**） ---------- */
+const ROUND_CN = { person:"模特", scene:"场景", shot:"镜头组", final:"成品", free:"自由出图" };
+function renderRounds(which){
+  const box = which==="chain" ? $("rlistChain") : $("rlistFree");
+  const tip = which==="chain" ? $("rtipChain") : $("rtipFree");
+  if(!box) return;
+  const kinds = which==="chain" ? ["person","scene","final"] : ["free"];
+  const rows = (S.rounds||[]).filter(r=>kinds.includes(r.kind));
+  if(tip) tip.textContent = rows.length ? `共 ${rows.length} 轮 · 单击看大图 · 双击带回对比` : "单击看大图 · 双击带回对比";
+  if(!rows.length){
+    box.innerHTML = `<div class="empty" style="padding:14px 4px;font-size:12px">还没有生成记录。<br>每出一轮，这里多一条。</div>`;
+    return;
+  }
+  // 🔴 卡面**只有图**：类型 / 时间 / 款号 / 配方名一律不进卡面，改走 `title` 悬浮显示。
+  const recName = rid => (rid ? ((S.recipes||[]).find(x=>x.recipe_id===rid)||{}).name || "（配方已删除）" : "");
+  box.innerHTML = rows.map(r=>{
+    const a = S.assets.find(x=>x.asset_id === (r.asset_ids||[])[0]) || {};
+    const meta = r.kind === "final"
+      ? `${ROUND_CN[r.kind]} · ${r.ts||""} · ${r.sku||"未填款"} · ${recName(r.recipe_id)||"新配方 · 未沉淀"}`
+      : `${ROUND_CN[r.kind]} · ${r.ts||""}`;
+    return `<div class="ritem ${S.activeRound===r.round_id?"on":""}" onclick="ritemTap('${esc(r.round_id)}', this)"
+      title="${esc(meta)}">
+      <div class="rthumb">${a.file?`<img src="${imgUrl(a.file)}" data-aid="${esc(a.asset_id||"")}" draggable="true" title="单击放大 · 双击带回对比 · 可拖拽">`:""}</div>
+    </div>`;
+  }).join("");
+}
+/* 轮次卡：**单击看大图 / 双击带回主区对比**
+   ⚠️ 这里必须自己区分单击双击，不能再靠 document 的灯箱委托 ——
+      因为点卡片若同时触发 recallRound，会重绘整个列表，被点的图**立刻脱离文档**，
+      灯箱就拿不到 src 了（closest('#v-gen img') 返回 null）。 */
+let _ritemTapT = null;
+function ritemTap(rid, el){
+  if(_ritemTapT){ clearTimeout(_ritemTapT); _ritemTapT = null; recallRound(rid); return; }  // 双击＝回看
+  _ritemTapT = setTimeout(()=>{                                                              // 单击＝放大
+    _ritemTapT = null;
+    const img = el.querySelector("img");
+    if(img) openLightbox(img.src, el.getAttribute("title") || "");
+  }, 230);
+}
+/* 点一条轮次 → 把它带回主区，跟当前轮对比 */
+function recallRound(rid){
+  const r = (S.rounds||[]).find(x=>x.round_id === rid); if(!r) return;
+  const a = S.assets.find(x=>x.asset_id === (r.asset_ids||[])[0]); if(!a) return;
+  S.activeRound = rid;
+  if(r.kind === "person"){ S.person = a; }
+  else if(r.kind === "scene"){ S.scene = a; }
+  else if(r.kind === "final"){ S.final = a; }
+  else if(r.kind === "free"){ S.plain = a; paintPlain(); }
+  paintPreview(); paintGate(); paintSteps();
+  renderRounds("chain"); renderRounds("free");
+  toast("已回看该轮"+ROUND_CN[r.kind]+"图 —— 可与当前轮对照");
+}
+
+/* ---------- 文生图 · 图生图（自由出图：不走配方链路，单纯图片编辑） ---------- */
+const RATIOS = { "1:1":[1,1], "3:4":[3,4], "4:3":[4,3], "2:3":[2,3], "3:2":[3,2], "9:16":[9,16], "16:9":[16,9] };
+/* 出图页（主链路）的尺寸选择：只给最常用的几档，默认 3:4（服装电商竖图） */
+const GEN_RATIOS = { "1:1":[1,1], "3:4":[3,4], "4:3":[4,3], "9:16":[9,16] };
+function initGenRatio(){
+  const sel = $("genRatio");
+  sel.innerHTML = Object.keys(GEN_RATIOS).map(k=>`<option value="${k}">${k}</option>`).join("");
+  sel.value = "3:4";
+}
+function genDims(){
+  const [a,b] = GEN_RATIOS[$("genRatio").value] || [3,4];
+  const base = 2048;   // 清晰度固定 2K
+  let w, h;
+  if(a >= b){ w = base; h = Math.round(base*b/a); } else { h = base; w = Math.round(base*a/b); }
+  w = Math.round(w/8)*8; h = Math.round(h/8)*8;
+  return `${w}x${h}`;
+}
+function initRatioSel(){
+  const sel = $("plainRatio");
+  sel.innerHTML = Object.keys(RATIOS).map(k=>`<option value="${k}">${k}</option>`).join("");
+  sel.value = S.plainRatio;
+}
+function plainDims(){
+  const base = {"1K":1024, "2K":2048, "4K":4096}[S.plainSize] || 2048;
+  const [a,b] = RATIOS[S.plainRatio] || [1,1];
+  let w, h;
+  if(a >= b){ w = base; h = Math.round(base*b/a); } else { h = base; w = Math.round(base*a/b); }
+  w = Math.round(w/8)*8; h = Math.round(h/8)*8;
+  return `${w}x${h}`;
+}
+function paintPlainSpec(){ $("plainSpec").textContent = `输出尺寸 ${plainDims().replace("x","×")}（${S.plainRatio} · ${S.plainSize}）`; }
+function paintPlain(){
+  const a = S.plain, bd = $("bdPlain"), st = $("stPlain");
+  const n = S.assets.filter(x=>x.type === "free_in").length;
+  $("ptTitle").textContent = n ? "生成结果（图生图）" : "生成结果（文生图）";
+  $("pfPlain").textContent = n ? `图生图：基于 ${n} 张图片素材 + 文字改写`
+                               : "文生图：没有图片素材，只按文字生成";
+  if(a && a.file){ bd.innerHTML = `<img src="${imgUrl(a.file)}">`; st.className="badge b-mid"; st.textContent="已生成"; }
+  else if(a){ bd.innerHTML = `<div class="ph">联调模式：未调真实生图<br><code>${esc((a.prompt_used||"").slice(0,60))}…</code></div>`; st.className="badge b-none"; st.textContent="占位"; }
+  else { bd.innerHTML = `<div class="ph">导入图片 → 图生图（编辑这张图）<br>不导入 → 文生图（只写文字）</div>`; st.className="badge b-none"; st.textContent="未生成"; }
+}
+function renderThumbsFree(){
+  const ins = S.assets.filter(a=>a.type === "free_in");
+  $("thumbsFree").innerHTML = ins.map(a=>`<div class="th"><img src="${imgUrl(a.file)}" title="${esc(a.file)}"></div>`).join("")
+     + `<div class="th up" title="导入图片（图生图）">＋</div>`;
+}
+$("thumbsFree").addEventListener("click", e=>{ if(e.target.closest(".th.up")) $("fileFree").click(); });
+$("fileFree").addEventListener("change", async e=>{
+  const files = [...e.target.files];
+  for(const f of files){
+    const b64 = await new Promise(res=>{ const r=new FileReader(); r.onload=()=>res(r.result.split(",")[1]); r.readAsDataURL(f); });
+    await api("/api/upload_ref", {project_id:S.pid, name:f.name, data:b64, purpose:"free"});
+  }
+  toast("已导入 "+files.length+" 张图片素材");
+  await refreshAssets(); paintPlain();
+  e.target.value = "";
+});
+$("btnPlain").addEventListener("click", async e=>{
+  const p = $("pPlain").value.trim();
+  if(!p) return toast("请先写提示词");
+  const refs = S.assets.filter(a=>a.type === "free_in").map(a=>a.asset_id);
+  busy(e.target, true);
+  const r = await api("/api/gen_plain", {project_id:S.pid, employee_id:S.emp, prompt:p,
+      refs, size:plainDims(), endpoint:$("plainEp").value});
+  busy(e.target, false);
+  if(r.asset) S.plain = r.asset;
+  S.activeRound = "";
+  paintPlain(); await refreshAssets();
+  toast(r.mock ? `联调模式：已生成占位图（${r.mode === "img2img" ? "图生图" : "文生图"}）`
+               : (r.mode === "img2img" ? "图生图完成" : "文生图完成"));
+});
+$("plainRatio").addEventListener("change", ()=>{ S.plainRatio = $("plainRatio").value; paintPlainSpec(); });
+$("plainSize").addEventListener("change", ()=>{ S.plainSize = $("plainSize").value; paintPlainSpec(); });
+
+/* ---------- 批量生成（表格：选一份配方 × N 个款 → 出 N 张成品） ---------- */
+/* ---------- 🔴 组合提示词 = 形象 + 场景 + 产品（三段真拼，不是写死的一句） ---------- */
+/* 🔴 组合提示词 = 形象 + 场景 + 产品 + 动作构图
+   结构＝「**什么人在什么场景穿着什么在做什么**」：人 → 场景 → 产品 → 动作 */
+function buildCombo(person, scene, product, action){
+  return [person, scene, product, action].map(s=>String(s==null?"":s).trim())
+         .filter(Boolean).join("，");
+}
+function comboHtml(person, scene, product, action){
+  const segs = [[person,"seg-a"],[scene,"seg-b"],[product,"seg-c"],[action,"seg-d"]]
+      .map(([s,c])=>String(s==null?"":s).trim() ? `<span class="${c}">${esc(String(s).trim())}</span>` : "")
+      .filter(Boolean);
+  return segs.length ? segs.join(`<span style="color:var(--tx3)">，</span>`)
+                     : `<span style="color:var(--tx3)">四段都还空着 —— 点「提取提示词」，或直接填</span>`;
+}
+function paintCombo(){
+  const el = $("pCombo"); if(!el) return;
+  el.innerHTML = comboHtml($("pPerson").value, $("pScene").value, $("pProduct").value, $("pAction").value);
+}
+/* ---------- 批量生成：视觉模板（固定的人＋景） × 一批产品图 ---------- */
+function currentRecipe(){ return (S.recipes||[]).find(r=>r.recipe_id === $("bRecipe").value) || null; }
+function renderBatchRecipeSel(){
+  const sel = $("bRecipe");
+  sel.innerHTML = S.recipes.length
+    ? S.recipes.map(r=>`<option value="${esc(r.recipe_id)}">${esc(r.name)}（镜头 ${((r.shots)||[]).length} 张 · 出过 ${(r.stats&&r.stats.final_count)||0} 张成品）</option>`).join("")
+    : `<option value="">（还没有视觉模板 —— 先去「出图」页保存一份）</option>`;
+}
+/* 顶部「视觉模板」块：固定部分（形象 / 场景）只读 ＋ 该模板的镜头组缩略 */
+function renderBatchTpl(){
+  const rec = currentRecipe();
+  $("bPerson").textContent = (rec && rec.person_prompt) || "—";
+  $("bScene").textContent  = (rec && rec.scene_prompt)  || "—";
+  $("bAction").textContent = (rec && rec.action_prompt) || "—";
+  const shots = (rec && rec.shots) || [];
+  $("bTplShots").className = shots.length ? "badge b-mid" : "badge b-none";
+  $("bTplShots").textContent = `镜头 ${shots.length} 张`;
+  const byId = {}; (S.assets||[]).forEach(a=>byId[a.asset_id]=a);
+  $("bShots").innerHTML = shots.length
+    ? shots.map(s=>{ const a = byId[s.asset_id] || {};
+        return `<div class="im" title="${esc(s.action||"")}">${a.file?`<img src="${imgUrl(a.file)}">`:""}</div>`; }).join("")
+    : `<span class="empty">这份视觉模板还没有镜头图 —— 去「出图」页把镜头图拖进「镜头组」带</span>`;
+}
+function addBatchRow(sku, product){
+  S.batch.push({ sku:sku||"", checked:true, status:"wait", secs:"",
+                 asset_id:"", prompt:"", model:"", err:"", product_prompt: product||"",
+                 person_prompt:"", scene_prompt:"", action_prompt:"" });
+}
+const BST = { wait:["待生成","st-wait"], run:["生成中…","st-run"], done:["✓ 完成","st-done"], fail:["✗ 失败","st-fail"] };
+function batchAsset(r){ return r.asset_id ? S.assets.find(a=>a.asset_id === r.asset_id) : null; }
+let _batchSaveTimer = null;
+function saveBatch(){                       // 队列落盘（防抖 400ms），刷新页面不丢
+  clearTimeout(_batchSaveTimer);
+  _batchSaveTimer = setTimeout(()=> api("/api/batch_save", {project_id:S.pid, rows:S.batch}), 400);
+}
+function renderBatch(){
+  renderBatchTpl();
+  const sel = S.batch.filter(r=>r.checked).length;
+  const rec = currentRecipe();
+  const pend = S.batch.filter(r=>{ const a=batchAsset(r); return a && (a.qc_status||"pending")==="pending"; }).length;
+  $("bSummary").textContent = `共 ${S.batch.length} 行 · 已勾选 ${sel} 行`
+      + (pend ? ` · 待标记 ${pend} 行` : "")
+      + (S.recipes.length ? "" : "　⚠️ 还没有视觉模板 —— 组合词会缺少「人 + 场景 + 动作」三段");
+  if(!S.batch.length){
+    $("bBody").innerHTML = `<tr><td colspan="9" class="empty">还没有行 —— 点「＋ 添加一行」「粘贴款清单」或「预置 40 行」把要跑的款加进来。</td></tr>`;
+    return;
+  }
+  const tP = (rec && rec.person_prompt) || "", tSc = (rec && rec.scene_prompt) || "",
+        tA = (rec && rec.action_prompt) || "";
+  $("bBody").innerHTML = S.batch.map((r,i)=>{
+    const [txt, cls] = BST[r.status] || BST.wait;
+    const spin = r.status === "run" ? `<span class="spin"></span> ` : "";
+    const a = batchAsset(r);
+    // 已完成的行用它自己跑时的几段（回看时不串台）；待生成的行跟随当前所选模板
+    const P = r.person_prompt || tP, Sc = r.scene_prompt || tSc, A = r.action_prompt || tA;
+    const combo = r.prompt || buildCombo(P, Sc, r.product_prompt, A);
+    // 验收列：有结果且「完成」的行才能标记；失败 / 待生成 / 无图 → 无验收动作
+    let qcCell = `<span style="color:var(--tx3)">—</span>`;
+    if(a && r.status === "done"){
+      const q = a.qc_status || "pending";
+      const badge = q==="ok" ? `<span class="badge b-good">已确认</span>`
+                  : q==="fail" ? `<span class="badge b-mid">需重做</span>`
+                  : `<span class="badge b-none">待标记</span>`;
+      qcCell = `${badge}<div style="margin-top:4px;display:flex;gap:4px">
+          <button class="mini" title="标记为合格" onclick="batchMark(${i},'ok')">✓</button>
+          <button class="mini" title="标记为需重做" onclick="batchMark(${i},'redo')">↺</button></div>`;
+    }
+    return `<tr>
+      <td><input type="checkbox" ${r.checked?"checked":""} onchange="toggleBatchRow(${i},this.checked)" style="width:auto"></td>
+      <td><input value="${esc(r.sku)}" onchange="setBatchSku(${i},this.value)" placeholder="款号" style="padding:5px 7px;font-size:12.5px"></td>
+      <td><input value="${esc(r.product_prompt||"")}" onchange="setBatchProduct(${i},this.value)"
+            placeholder="这一款的产品细节（可留空）" style="padding:5px 7px;font-size:12px"></td>
+      <td class="combocell" title="${esc(combo)}">${comboHtml(P, Sc, r.product_prompt, A)}
+        ${r.err?`<div style="color:var(--err);margin-top:3px">${esc(r.err)}</div>`:""}
+        ${(r.model||(a&&a.model_name))?`<div style="color:#9aa1ab;margin-top:3px">${modelTag(r.model||(a&&a.model_name))}</div>`:""}</td>
+      <td class="st"><span class="${cls}">${spin}${txt}</span></td>
+      <td>${fmtSec(r.secs)}</td>
+      <td style="text-align:left">${qcCell}</td>
+      <td><div class="bthumb">${a && a.file ? `<img src="${imgUrl(a.file)}">` : "—"}</div></td>
+      <td><button class="delbtn" title="把这一行移出队列" onclick="delBatchRow(${i})">✕</button></td>
+    </tr>`;
+  }).join("");
+}
+window.toggleBatchRow = (i,v)=>{ S.batch[i].checked = v; renderBatch(); saveBatch(); };
+window.setBatchSku    = (i,v)=>{ S.batch[i].sku = v; saveBatch(); };
+window.setBatchProduct= (i,v)=>{ S.batch[i].product_prompt = v; renderBatch(); saveBatch(); };
+window.delBatchRow    = (i)=>{ S.batch.splice(i,1); renderBatch(); saveBatch(); };
+/* 「标记合格 / 需重做」就做在批量页 —— 批量跑完，结果逐行验收，不另开挑选页 */
+window.batchMark = async (i, st)=>{
+  const r = S.batch[i]; const a = batchAsset(r);
+  if(!a) return toast("这一行还没有出图结果，不能标记");
+  await api("/api/asset_mark", {asset_id: a.asset_id, qc_status: st==="ok"?"ok":"fail"});
+  a.qc_status = st==="ok"?"ok":"fail";   // 本地即时更新徽标
+  renderBatch();
+  toast(st==="ok" ? `已标记 ${r.sku || "该行"} 为合格` : `已标记 ${r.sku || "该行"} 需重做`);
+};
+async function batchMarkSel(st){
+  const rows = S.batch.filter(r=>r.checked && batchAsset(r));
+  if(!rows.length) return toast("没有已勾选且已出图的行 —— 先勾选有结果的几行");
+  for(const r of rows){ const a=batchAsset(r);
+    await api("/api/asset_mark", {asset_id:a.asset_id, qc_status: st==="ok"?"ok":"fail"});
+    a.qc_status = st==="ok"?"ok":"fail"; }
+  renderBatch();
+  toast(st==="ok" ? `已标记 ${rows.length} 行为合格` : `已标记 ${rows.length} 行需重做`);
+}
+$("btnBPass").addEventListener("click", ()=> batchMarkSel("ok"));
+$("btnBRedo").addEventListener("click", ()=> batchMarkSel("redo"));
+$("bRecipe").addEventListener("change", ()=>{ renderBatch(); saveBatch(); });
+$("btnBAdd").addEventListener("click", ()=>{ addBatchRow(""); renderBatch(); saveBatch(); });
+$("btnBPaste").addEventListener("click", ()=>{
+  const txt = prompt("粘贴款号清单（一行一个，或用逗号 / 空格分隔）：", "");
+  if(!txt) return;
+  const list = txt.split(/[\n,，、\s]+/).map(s=>s.trim()).filter(Boolean);
+  list.forEach(s=>addBatchRow(s, ""));
+  renderBatch(); saveBatch();
+  toast(`已添加 ${list.length} 行`);
+});
+$("btnBFill40").addEventListener("click", ()=>{
+  for(let i=0;i<40;i++) addBatchRow("KN-"+(2100+i)+"-S", "");
+  renderBatch(); saveBatch();
+  toast("已预置 40 行（一批的标准量）—— 款号与产品词可逐行改");
+});
+$("btnBClear").addEventListener("click", ()=>{ if(!S.batch.length) return; S.batch = []; renderBatch(); saveBatch(); });
+$("bAll").addEventListener("change", e=>{ const v = e.target.checked; S.batch.forEach(r=>r.checked = v); renderBatch(); saveBatch(); });
+$("btnBRun").addEventListener("click", async e=>{
+  const rows = S.batch.filter(r=>r.checked && r.sku.trim());
+  if(!rows.length) return toast("没有可跑的行（需要有款号且已勾选）");
+  const rid = $("bRecipe").value;
+  if(!rid) return toast("请先选一份视觉模板");
+  const rec = (await api("/api/recipes")).find(x=>x.recipe_id === rid) || null;
+  const P = (rec && rec.person_prompt) || "", Sc = (rec && rec.scene_prompt) || "",
+        A = (rec && rec.action_prompt) || "";
+  busy(e.target, true, `批量生成中 0/${rows.length}`);
+  $("bProg").style.display = "block";
+  let done = 0;
+  for(const row of rows){
+    row.status = "run"; renderBatch();
+    const r = await api("/api/compose", {project_id:S.pid, employee_id:S.emp, sku:row.sku.trim(),
+        recipe_id:rid, person_asset_id:rec?rec.person_asset_id:"", scene_asset_id:rec?rec.scene_asset_id:"",
+        person_prompt:P, scene_prompt:Sc, product_prompt:row.product_prompt || "", action_prompt:A});
+    done++;
+    row.status = (r.ok || r.mock) ? "done" : "fail";
+    row.secs = (r.secs == null) ? "" : r.secs;
+    row.asset_id = (r.asset && r.asset.asset_id) || "";
+    row.err = r.error || ""; row.model = (r.asset && r.asset.model_name) || "";
+    row.prompt = (r.asset && r.asset.prompt_used) || buildCombo(P, Sc, row.product_prompt, A);  // 该行实际用的组合词
+    row.person_prompt = P; row.scene_prompt = Sc; row.action_prompt = A;   // 记住这一行跑时用的固定几段
+    if(r.asset) S.assets.push(r.asset);          // 立即可见：本轮结果直接进缩略
+    $("bProgBar").style.width = Math.round(done/rows.length*100) + "%";
+    e.target.textContent = `批量生成中 ${done}/${rows.length}`;
+    renderBatch();
+  }
+  busy(e.target, false);
+  $("bProg").style.display = "none"; $("bProgBar").style.width = "0";
+  saveBatch();
+  await refreshAssets();
+  toast(`批量完成：${done} 行，均挂在这份视觉模板下 —— 每行可「标记合格 / 需重做」`);
+});
+
+/* ---------- 素材库（按配方分组） ---------- */
+function perfOf(rid){ return S.perf.filter(p=>p.recipe_id===rid); }
+function aggPerf(rid){
+  const rows = perfOf(rid); if(!rows.length) return null;
+  const avg = k => { const v=rows.map(r=>parseFloat(r[k])).filter(x=>!isNaN(x)); return v.length? v.reduce((a,b)=>a+b,0)/v.length : NaN; };
+  const sales = rows.reduce((a,r)=>a+(parseFloat(r.sales)||0),0);
+  return {ctr:avg("ctr"), cvr:avg("cvr"), sales, period:rows[rows.length-1].period};
+}
+function verdict(p){ if(!p) return ["未回填","b-none"]; if(p.ctr>=0.06||p.cvr>=0.03) return ["好·可再用","b-good"]; return ["一般","b-mid"]; }
+/* 排序 / 筛选取值（对应数据模型：配方不含款 → 排序维度落在"效果 + 产出量"上） */
+function libKind(rid){
+  const [t,c] = verdict(aggPerf(rid));
+  return c==="b-good" ? "good" : (c==="b-mid" ? "mid" : "none");
+}
+function libSortValue(r, key){
+  const st = r.stats || {}, p = aggPerf(r.recipe_id);
+  switch(key){
+    case "recent": return st.last_at || r.created_at || "";
+    case "ctr":    return p && !isNaN(p.ctr) ? p.ctr : -1;
+    case "cvr":    return p && !isNaN(p.cvr) ? p.cvr : -1;
+    case "sales":  return p && !isNaN(p.sales) ? p.sales : -1;
+    case "count":  return st.final_count || 0;
+  }
+  return 0;
+}
+/* 缩略条封顶：最多展示 max 张，其余折成一格 "+N"（想全看就点开卡片进抽屉）
+   —— 之前 slice(0,6) 是**静默丢**：出过 9 张只显示 6 张，数字对不上也没人知道。 */
+function stripHtml(finals, max){
+  max = max || 5;
+  if(!finals.length) return `<div class="s">无图</div>`;
+  const shown = finals.slice(0, max);
+  let h = shown.map(a=>`<div class="s">${a.file?`<img src="${imgUrl(a.file)}">`:"无图"}</div>`).join("");
+  const rest = finals.length - shown.length;
+  if(rest > 0) h += `<div class="s more" title="还有 ${rest} 张未展开，点开卡片看全部">+${rest}</div>`;
+  return h;
+}
+function renderLib(){
+  if(!S.recipes.length){ $("libgrid").innerHTML = `<div class="empty">还没有配方 —— 去「出图」页走完一遍并「保存入库」，这里就会出现按配方分组的卡片。</div>`; return; }
+  let rows = S.recipes.slice();
+  const f = S.libFilter || "all";
+  if(f !== "all") rows = rows.filter(r=>libKind(r.recipe_id) === f);
+  const k = S.libSort || "recent";
+  rows.sort((a,b)=>{
+    const va = libSortValue(a,k), vb = libSortValue(b,k);
+    if(k === "recent") return String(vb).localeCompare(String(va));
+    return (Number(vb)||0) - (Number(va)||0);
+  });
+  if(!rows.length){ $("libgrid").innerHTML = `<div class="empty">当前筛选条件下没有配方。</div>`; return; }
+  $("libgrid").innerHTML = rows.map(r=>{
+    const p = aggPerf(r.recipe_id); const [vtxt,vcls] = verdict(p);
+    const st = r.stats || {};
+    const finals = S.assets.filter(a=>a.recipe_id===r.recipe_id && a.type==="final");
+    const strip = stripHtml(finals, 4);   // 4 格一排刚好不折行；其余折成 "+N"
+    const perfHtml = p ? `<div class="perf">
+        <div><b>${(p.ctr*100).toFixed(2)}%</b><small>点击率</small></div>
+        <div><b>${(p.cvr*100).toFixed(2)}%</b><small>转化率</small></div>
+        <div><b>${p.sales.toFixed(0)}</b><small>销售</small></div></div>`
+      : `<div class="perf-none"><b>暂无效果数据</b><small>点右上角「导入效果数据」按配方填充</small></div>`;
+    return `<div class="rcard clickable" onclick="openRecipe('${esc(r.recipe_id)}')">
+      <div class="rh"><div><div class="rn">${esc(r.name)}</div><div class="rid">视觉模板 id · ${esc(r.recipe_id)}</div></div>
+        <span class="badge ${vcls}">${vtxt}</span></div>
+      <div class="rstat"><span>镜头 <b>${((r.shots)||[]).length}</b> 张</span>
+        <span>出过 <b>${st.final_count||0}</b> 张成品</span>
+        <span>涉及 <b>${st.sku_count||0}</b> 个 SKU</span>
+        ${st.last_at?`<span>最近 ${esc(String(st.last_at).replace("T"," ").slice(5,16))}</span>`:""}</div>
+      <div class="rstrip">${strip}</div>
+      ${perfHtml}
+      <div class="btnrow">
+        <button onclick="event.stopPropagation();reuse('${esc(r.recipe_id)}')">复用这份配方</button>
+        <button onclick="event.stopPropagation();openRecipe('${esc(r.recipe_id)}')">查看它出过的图</button>
+      </div></div>`;
+  }).join("");
+}
+
+/* ---------- 配方详情抽屉（B3：一份配方出过的所有图） ---------- */
+function fileOf(aid){ const a = S.assets.find(x=>x.asset_id===aid); return a ? a.file : ""; }
+async function openRecipe(rid){
+  const d = await api("/api/recipe_detail?recipe_id="+encodeURIComponent(rid));
+  if(!d.ok) return toast("配方不存在");
+  const r = d.recipe, st = d.stats || {}, p = aggPerf(rid);
+  const [vtxt,vcls] = verdict(p);
+  $("drName").textContent = r.name;
+  $("drBadge").className = "badge "+vcls; $("drBadge").textContent = vtxt;
+  $("drReuse").onclick = ()=>reuse(rid);
+  const pr = r.params || {};
+  const rawModel = pr.model || (d.finals[0] && d.finals[0].model_name) || "";
+  const paramTxt = [
+    `模型：${fmtModel(rawModel)}`,
+    rawModel ? `模型 id：${rawModel}` : "",
+    `尺寸：${pr.size || "2K"} ｜ 张数：${pr.count || 1}`,
+    pr.sku ? `保存时关联的款：${pr.sku}` : ""
+  ].filter(Boolean).join("\n");
+  const perfRows = (d.performance||[]).map(x=>`<tr><td>${esc(x.period)}</td>
+      <td>${(parseFloat(x.ctr)*100).toFixed(2)}%</td><td>${(parseFloat(x.cvr)*100).toFixed(2)}%</td>
+      <td>${esc(x.sales)}</td></tr>`).join("");
+  // 来源与导入时间每行都一样 → 不逐行重复，收到表格下面一行说明（同批导入，写两遍像复制粘贴）
+  const _pl = d.performance || [];
+  const _last = _pl.length ? _pl[_pl.length - 1] : null;
+  const perfMeta = _last
+    ? `来源 ${esc(_last.source || "外部系统导出")} · 最近导入 ` +
+      `${esc(String(_last.imported_at||"").replace("T"," ").slice(0,16))}` +
+      (_last.imported_by ? `（${esc(_last.imported_by)}）` : "")
+    : "";
+  const owner = r.name;               // 抽屉里所有产出都属于这份配方
+  const ocard = (a) => {
+    const q = a.qc_status === "ok" ? "已确认" : (a.qc_status === "fail" ? "需重做" : "待标记");
+    return `<div class="ocard">
+      <div class="im">${a.file?`<img src="${imgUrl(a.file)}">`:"联调·无图"}</div>
+      <div class="mt"><b>${esc(a.sku || TYPE_CN[a.type] || a.type)}</b><br>${modelTag(a.model_name)}<br>
+        ${fmtSec(a.gen_seconds)} ｜ ${esc(String(a.created_at||"").replace("T"," ").slice(5,16))}<br>
+        状态：${q}<br>归属：${esc(owner)}</div></div>`;
+  };
+  $("drBody").innerHTML = `
+    <div class="dr-sec"><h4>配方信息</h4>
+      <div class="kvbox mono">视觉模板 id · ${esc(r.recipe_id)}
+创建人 ${esc(r.created_by)} ｜ 创建于 ${esc(String(r.created_at||"").replace("T"," "))}
+可见性 ${esc(r.visibility||"team")}（团队共享）</div></div>
+    <div class="dr-sec"><h4>参数 <span class="tag">配方里不含款式 → 所以能跨款复用</span></h4>
+      <div class="kvbox mono">${esc(paramTxt)}</div></div>
+    <div class="dr-sec"><h4>形象提示词 <span class="tag">什么人 · 组合词的固定部分</span></h4><div class="kvbox">${esc(r.person_prompt||"—")}</div></div>
+    <div class="dr-sec"><h4>场景提示词 <span class="tag">什么场景 · 组合词的固定部分</span></h4><div class="kvbox">${esc(r.scene_prompt||"—")}</div></div>
+    <div class="dr-sec"><h4>动作构图提示词 <span class="tag">做什么 · 组合词的固定部分</span></h4><div class="kvbox">${esc(r.action_prompt||"—")}</div></div>
+    <div class="dr-sec"><h4>产品提示词 <span class="tag">穿着什么 · 逐行可换 → 组合词的可变部分</span></h4>
+      <div class="kvbox">${esc(r.product_prompt || "（留空 —— 批量时按行填产品细节）")}</div></div>
+    <div class="dr-sec"><h4>组合生成提示词 <span class="tag">＝ 人 ＋ 场景 ＋ 产品 ＋ 动作</span></h4>
+      <div class="kvbox">${comboHtml(r.person_prompt, r.scene_prompt, r.product_prompt, r.action_prompt)}</div></div>
+    <div class="dr-sec"><h4>镜头组 <span class="tag">视觉模板的图 · ${(d.shots||[]).length} 张 · 同一形象 × 同一场景 × 不同动作 / 沟通图</span></h4>
+      <div class="ogrid">${(d.shots||[]).map(s=>ocard(Object.assign({}, s.asset||{asset_id:s.asset? s.asset.asset_id:""}, {sku:s.action}))).join("")
+        || `<div class="empty">这份模板还没有镜头图 —— 去「出图」页把镜头图拖进「镜头组」带。</div>`}</div></div>
+    <div class="dr-sec"><h4>效果数据 <span class="tag">外部系统导出 → 按视觉模板 id 自动填充</span></h4>
+      ${perfRows ? `<table><thead><tr><th>周期</th><th>点击率</th><th>转化率</th><th>销售</th></tr></thead><tbody>${perfRows}</tbody></table>${perfMeta ? `<p class="perf-meta">${perfMeta}</p>` : ""}`
+                 : `<div class="empty">还没有效果数据。点「导入效果数据」按配方 id 填充。</div>`}</div>
+    <div class="dr-sec"><h4>累计产出 <span class="tag">这份模板出过的所有成品 · ${st.final_count||0} 张 · 涉及 ${st.sku_count||0} 个 SKU${(st.skus&&st.skus.length)?"："+esc(st.skus.join(" / ")):""}</span></h4>
+      <div class="ogrid">${(d.finals||[]).map(ocard).join("") || `<div class="empty">这份配方还没有成品。</div>`}</div></div>
+    <div class="dr-sec"><h4>支线素材 <span class="tag">形象与场景各一条，跨款复用</span></h4>
+      <div class="ogrid">${[...(d.persons||[]),...(d.scenes||[])].map(ocard).join("") || `<div class="empty">无</div>`}</div></div>`;
+  $("drmask").classList.add("on"); $("drawer").classList.add("on");
+}
+function closeDrawer(){ $("drmask").classList.remove("on"); $("drawer").classList.remove("on"); }
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDrawer(); });
+
+/* 复用：把这份配方的提示词与支线素材带回新一轮；合成时挂回同一 recipe_id */
+function reuse(rid){
+  const r = S.recipes.find(x=>x.recipe_id===rid); if(!r) return;
+  S.reuseRid = rid;
+  $("pPerson").value = r.person_prompt || ""; $("pScene").value = r.scene_prompt || "";
+  $("pProduct").value = r.product_prompt || ""; $("pAction").value = r.action_prompt || "";
+  S.person = r.person_asset_id ? {asset_id:r.person_asset_id, file:fileOf(r.person_asset_id)} : null;
+  S.scene  = r.scene_asset_id  ? {asset_id:r.scene_asset_id,  file:fileOf(r.scene_asset_id)}  : null;
+  // 带上这份视觉模板的镜头组（≈15 张）—— 复用复用的是"一整个模板"，不是一张图
+  const byId = {}; (S.assets||[]).forEach(a=>byId[a.asset_id]=a);
+  S.shots = ((r.shots)||[]).map(s=>Object.assign({shot_index:s.shot_index,
+             action_prompt:s.action}, byId[s.asset_id]||{asset_id:s.asset_id}));
+  S.final = null;
+  paintCombo(); paintPreview();
+  closeDrawer();
+  document.querySelector('#nav a[data-v="gen"]').click();
+  toast("已带入视觉模板「"+r.name+"」：四段提示词 + 镜头组 "+S.shots.length+" 张已回填");
+  paintSteps();
+}
+async function importPerfFor(rid){
+  const r = S.recipes.find(x=>x.recipe_id===rid); if(!r) return;
+  const ctr = prompt("该配方的点击率（小数，如 0.072）：","0.072"); if(ctr===null) return;
+  const cvr = prompt("转化率（小数，如 0.031）：","0.031"); if(cvr===null) return;
+  const sales = prompt("销售（金额）：","1280"); if(sales===null) return;
+  const res = await api("/api/perf_import", {employee_id:S.emp, rows:[{recipe_id:rid, period:"近30天", ctr, cvr, sales}]});
+  toast(res.ok? "效果数据已导入（按视觉模板 id 填充）":"导入失败");
+  await refreshAssets(); renderLib();
+}
+$("btnImportPerf").addEventListener("click", async ()=>{
+  if(!S.recipes.length) return toast("先有配方才能导入效果数据");
+  const rows = S.recipes.map((r,i)=>({recipe_id:r.recipe_id, period:"近30天",
+      ctr:(0.04+((i*7)%9)/100).toFixed(3), cvr:(0.02+((i*3)%5)/100).toFixed(3), sales:800+((i*370)%1500)}));
+  const res = await api("/api/perf_import", {employee_id:S.emp, rows});
+  toast(res.ok? `已导入 ${res.imported} 条效果数据`:"导入失败");
+  await refreshAssets(); renderLib();
+});
+
+/* ---------- 素材库：排序 / 筛选 ---------- */
+$("libSort").addEventListener("change", ()=>{ S.libSort = $("libSort").value; renderLib(); });
+$("libFilter").addEventListener("change", ()=>{ S.libFilter = $("libFilter").value; renderLib(); });
+
+/* ---------- 日志 ---------- */
+const ACT = {extract:"提取提示词", gen_base:"生成支线", gen_shots:"生成镜头组",
+             compose:"组合生成", gen_plain:"自由出图", save:"入库",
+             admin_save:"后台配置", admin_probe:"节点测速"};
+async function renderLogs(){
+  const rows = await api("/api/logs?limit=200");
+  if(!rows.length){ $("logsWrap").innerHTML = `<div class="empty">暂无操作记录。</div>`; return; }
+  $("logsWrap").innerHTML = `<table><thead><tr>
+      <th>员工 id</th><th>生成时间</th><th>动作</th><th title="调用模型的次数">请求次数</th><th title="实际产出并落盘的图片张数">产出张数</th><th>提示词内容</th><th>使用的模型</th></tr></thead><tbody>
+    ${rows.map(r=>`<tr><td>${esc(r.employee_id)}</td><td>${esc((r.ts||"").replace("T"," "))}</td>
+      <td>${esc(ACT[r.action]||r.action||"")}</td><td>${esc(r.gen_count??"")}</td><td>${esc(r.img_count??"")}</td>
+      <td style="max-width:340px">${esc(r.prompt_content)}</td><td>${modelTag(r.model_name)}</td></tr>`).join("")}
+    </tbody></table>`;
+}
+
+/* ---------- 后台管理（模型 / 节点 / 成员 / 全局配置） ----------
+   🔑 对标同类项目（神笔马良 Soul Canvas `src/lib/api-node-manager.ts`）里的 NodeManager：
+   它把「节点测速 / 选择策略 / 故障转移」做在代码里、靠改 .env 重启；
+   这里把同一套逻辑**做成看得见的后台**。
+   🔴 用量与成本一律由后端现算（不落盘），前端只负责展示。 */
+const ADM_STRAT_CN = {priority:"按优先级", latency:"按最低延迟", "round-robin":"轮询"};
+const ADM_MSTAT = {active:["b-good","在用"], limited:["b-mid","接近上限"], paused:["b-none","已暂停"]};
+const ADM_CFG = [
+  {k:"default_shots",     label:"默认镜头数",       hint:"一份视觉模板默认出几个镜头"},
+  {k:"per_shot_variants", label:"每镜头出图数",     hint:"出几张挑一张"},
+  {k:"max_concurrency",   label:"最大并发",         hint:"批量同时跑几行"},
+  {k:"retry",             label:"失败重试次数"},
+  {k:"node_strategy",     label:"节点调度策略", type:"select",
+   opts:[["priority","按优先级"],["latency","按最低延迟"],["round-robin","轮询"]]},
+  {k:"storage",           label:"存储目录", type:"text"},
+  {k:"retry_queue",       label:"失败行自动回队", type:"bool"},
+  {k:"batch_review",      label:"批量结果需人工标记合格", type:"bool"},
+  {k:"share_default",     label:"新建配方默认可见性", type:"select",
+   opts:[["team","全团队共享"],["private","仅自己"]]}
+];
+let ADM = null;
+
+async function renderAdmin(){
+  ADM = await api("/api/admin_state");
+  if(!ADM || !ADM.ok){ toast("后台数据加载失败"); return; }
+  $("admStamp").textContent = ADM.updated_at
+    ? "最近变更 " + (ADM.updated_at||"").replace("T"," ") + " · " + (ADM.updated_by || "—")
+    : "—";
+  $("admStrategy").textContent = ADM.strategy_cn || "—";
+  paintAdmModels(); paintAdmNodes(); paintAdmMembers();
+  paintAdmUsage(ADM.usage); paintAdmForm(ADM.config);
+}
+
+/* A-1 模型清单：开关即启停（写回配置） */
+function paintAdmModels(){
+  $("admModels").innerHTML = (ADM.models||[]).map((m,i)=>`
+    <tr>
+      <td><b>${esc(m.name)}</b>${m.kind === "vlm"
+            ? '<span class="tag" style="margin-left:6px;color:var(--tx3)">提示词识别</span>' : ""}
+        <div class="dim" style="font-size:10.5px">${esc(m.vendor)}</div></td>
+      <td class="dim">${esc(m.via)}</td>
+      <td class="dim" style="max-width:190px">${esc(m.purpose)}</td>
+      <td>${m.kind === "vlm" ? '<span class="dim">按 token</span>'
+            : `¥${Number(m.unit_price||0).toFixed(2)}<span class="dim">/张</span>`}</td>
+      <td class="dim">P${m.priority}</td>
+      <td><button class="sw ${m.enabled?"on":""}" onclick="admToggleModel(${i})"
+            title="${m.enabled?"已启用 · 点此停用":"已停用 · 点此启用"}"></button></td>
+    </tr>`).join("");
+}
+async function admToggleModel(i){
+  const m = (ADM.models||[])[i]; if(!m) return;
+  m.enabled = !m.enabled; paintAdmModels();
+  await api("/api/admin_save", {section:"models", data:ADM.models, employee_id:S.emp});
+  toast("模型「" + m.name + "」已" + (m.enabled ? "启用" : "停用"));
+  adminRefreshStamp();
+}
+
+/* A-2 节点健康：状态灯 / 延迟 / 成功率 / 故障转移 */
+function paintAdmNodes(){
+  $("admNodes").innerHTML = (ADM.nodes||[]).map(n=>{
+    const h = n.health || {};
+    const st = !n.enabled ? ["off","已停用"] : (h.status === "ok" ? ["ok","正常"] : ["warn","波动"]);
+    const lat = n.enabled ? (h.latency_ms ? h.latency_ms + "ms" : "—") : "—";
+    const sr  = n.enabled && h.success_rate ? (Number(h.success_rate)*100).toFixed(1) + "%" : "—";
+    return `<tr>
+      <td><span class="dot ${st[0]}"></span><b>${esc(n.name)}</b>
+        <div class="dim" style="font-size:10.5px" title="${esc(n.base_url||"")}">${esc(n.mode||"")} · P${n.priority}</div></td>
+      <td class="dim">${(n.models||[]).map(esc).join("、")}</td>
+      <td>${lat}</td>
+      <td>${sr}</td>
+      <td class="dim">${h.failovers||0} 次</td>
+      <td>${st[1]}</td>
+    </tr>`;
+  }).join("");
+}
+async function adminProbe(btn){
+  busy(btn, true, "测速中…");
+  const r = await api("/api/admin_probe", {employee_id:S.emp});
+  busy(btn, false);
+  if(r && r.nodes){ ADM.nodes = r.nodes; paintAdmNodes(); }
+  $("admProbeAt").textContent = "已测速 " + ((r && r.checked_at) || "").replace("T"," ");
+  adminRefreshStamp();
+  toast("节点测速完成（联调态为模拟探针，不真发请求）");
+}
+async function adminRefreshStamp(){
+  const d = await api("/api/admin_state");
+  if(d && d.ok){
+    ADM.updated_at = d.updated_at; ADM.updated_by = d.updated_by;
+    $("admStamp").textContent = "最近变更 " + (d.updated_at||"").replace("T"," ") + " · " + (d.updated_by||"—");
+    $("admSavedAt").textContent = "上次保存 " + (d.updated_at||"").replace("T"," ");
+  }
+}
+
+/* B 成员与配额 */
+function paintAdmMembers(){
+  $("admMembers").innerHTML = (ADM.members||[]).map(m=>{
+    const pct = m.quota ? Math.min(100, Math.round((m.used||0) / m.quota * 100)) : 0;
+    const cls = pct >= 95 ? "hot" : (pct >= 75 ? "warm" : "");
+    const st  = ADM_MSTAT[m.status] || ["b-none", m.status || "—"];
+    return `<tr>
+      <td><code style="font-size:11.5px">${esc(m.employee_id)}</code></td>
+      <td>${esc(m.name)}</td>
+      <td class="dim">${esc(m.role)}</td>
+      <td class="dim" style="max-width:215px">${(m.models||[]).map(esc).join("、")}</td>
+      <td>${(m.quota||0).toLocaleString()}</td>
+      <td>${(m.used||0).toLocaleString()}</td>
+      <td><div class="bar"><i class="${cls}" style="width:${pct}%"></i></div>
+        <div class="dim" style="font-size:10.5px;margin-top:3px">${pct}%</div></td>
+      <td><span class="badge ${st[0]}">${st[1]}</span></td>
+    </tr>`;
+  }).join("");
+}
+
+/* C 用量与成本（后端现算结果，前端只展示） */
+function paintAdmUsage(u){
+  if(!u) return;
+  const b = u.batch || {};
+  $("admKpi").innerHTML = `
+    <div class="k"><div class="lb">累计生成</div>
+      <div class="vv">${(u.images||0).toLocaleString()}<small>张</small></div>
+      <div class="sub">成品 ${u.finals||0} · 模板镜头 ${u.shots||0}</div></div>
+    <div class="k"><div class="lb">累计成本</div>
+      <div class="vv">¥${Number(u.cost||0).toFixed(2)}</div>
+      <div class="sub">按配置单价测算（非账单）</div></div>
+    <div class="k"><div class="lb">平均单张</div>
+      <div class="vv">¥${Number(u.avg||0).toFixed(3)}</div>
+      <div class="sub">多模型分工后的均价</div></div>
+    <div class="k"><div class="lb">批量成功率</div>
+      <div class="vv">${b.success_rate||0}<small>%</small></div>
+      <div class="sub">完成 ${b.done||0} · 失败 ${b.fail||0} · 待跑 ${b.wait||0}</div></div>`;
+  $("admCostModel").innerHTML = (u.by_model||[]).map(r=>`
+    <tr><td>${modelTag(r.model)}</td><td>${r.count}</td>
+      <td class="dim">¥${Number(r.unit_price||0).toFixed(2)}</td>
+      <td>¥${Number(r.cost||0).toFixed(2)}</td>
+      <td><div class="bar"><i style="width:${r.pct||0}%"></i></div></td></tr>`).join("")
+    || `<tr><td colspan="5" class="empty">还没有生成记录。</td></tr>`;
+  $("admCostProj").innerHTML = (u.by_project||[]).map(r=>`
+    <tr><td>${esc(r.name||r.project_id)}</td><td>${r.count}</td>
+      <td>¥${Number(r.cost||0).toFixed(2)}</td>
+      <td><div class="bar"><i style="width:${r.pct||0}%"></i></div></td></tr>`).join("")
+    || `<tr><td colspan="4" class="empty">还没有生成记录。</td></tr>`;
+}
+
+/* D 全局配置 */
+function paintAdmForm(cfg){
+  cfg = cfg || {};
+  $("admForm").innerHTML = ADM_CFG.map(f=>{
+    let inp;
+    if(f.type === "select"){
+      inp = `<select id="cf_${f.k}">${f.opts.map(([v,t])=>
+        `<option value="${v}" ${cfg[f.k]===v?"selected":""}>${t}</option>`).join("")}</select>`;
+    } else if(f.type === "bool"){
+      inp = `<select id="cf_${f.k}"><option value="1" ${cfg[f.k]?"selected":""}>开启</option>`
+          + `<option value="0" ${!cfg[f.k]?"selected":""}>关闭</option></select>`;
+    } else if(f.type === "text"){
+      inp = `<input id="cf_${f.k}" value="${esc(cfg[f.k]??"")}">`;
+    } else {
+      inp = `<input id="cf_${f.k}" type="number" value="${esc(cfg[f.k]??"")}">`;
+    }
+    return `<div class="ff"><label>${f.label}</label>${inp}`
+         + (f.hint ? `<div class="hint">${f.hint}</div>` : "") + `</div>`;
+  }).join("");
+  $("admSavedAt").textContent = ADM.updated_at
+    ? "上次保存 " + (ADM.updated_at||"").replace("T"," ") : "";
+}
+async function adminSaveConfig(btn){
+  const cfg = {};
+  ADM_CFG.forEach(f=>{
+    const el = $("cf_" + f.k); if(!el) return;
+    if(f.type === "bool")        cfg[f.k] = (el.value === "1");
+    else if(f.type === "select" || f.type === "text") cfg[f.k] = el.value;
+    else                          cfg[f.k] = Number(el.value);
+  });
+  busy(btn, true, "保存中…");
+  const r = await api("/api/admin_save", {section:"config", data:cfg, employee_id:S.emp});
+  busy(btn, false);
+  if(!r || !r.ok){ toast("保存失败：" + ((r && r.error) || "未知错误")); return; }
+  toast("全局配置已保存");
+  renderAdmin();
+}
+
+/* ---------- 图片灯箱：点第一页任意图放大 ---------- */
+function openLightbox(src, cap){
+  if(!src) return;
+  $("lbImg").src = src; $("lbCap").textContent = cap || "";
+  $("lightbox").classList.add("on");
+}
+window.closeLightbox = ()=>{ $("lightbox").classList.remove("on"); $("lbImg").src=""; };
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeLightbox(); });
+
+/* ---------- 拖拽导入：第一页任意图 → 任意「可带入的框」 ----------
+   投放框由 data-drop 标注：person（模特卡）/ scene（场景卡）/ shot（镜头组带）
+   🔑 拖入即"带入"：拖到模特卡＝设为模特，场景卡＝设为场景，镜头组＝追加一个镜头。 */
+function assetByAid(aid){ return (S.assets||[]).find(a=>a.asset_id===aid) || null; }
+document.addEventListener("click", e=>{
+  if(e.target.closest(".thx") || e.target.closest(".ssx")) return;   // 删除按钮不触发灯箱
+  if(e.target.closest(".roundbar")) return;   // 轮次卡走自己的「单击放大／双击回看」，见 ritemTap()
+  const img = e.target.closest("#v-gen img, #v-batch img, #v-lib img"); if(!img) return;
+  openLightbox(img.src, img.getAttribute("title") || "");
+});
+document.addEventListener("dragstart", e=>{
+  const img = e.target.closest("#v-gen img"); if(!img) return;
+  e.dataTransfer.setData("text/plain", img.dataset.aid || "");
+  e.dataTransfer.effectAllowed = "copy";
+});
+document.addEventListener("dragover", e=>{
+  const zone = e.target.closest("[data-drop]"); if(!zone) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+  zone.classList.add("dz-over");
+});
+document.addEventListener("dragleave", e=>{
+  const zone = e.target.closest("[data-drop]"); if(zone) zone.classList.remove("dz-over");
+  if(e.target === zone) zone.classList.remove("dz-over");
+});
+document.addEventListener("drop", e=>{
+  const zone = e.target.closest("[data-drop]"); if(!zone) return;
+  e.preventDefault(); zone.classList.remove("dz-over");
+  const a = assetByAid(e.dataTransfer.getData("text/plain"));
+  if(!a){ toast("这张图不在素材库里，无法带入"); return; }
+  const what = zone.dataset.drop;
+  if(what === "person"){
+    S.person = {asset_id:a.asset_id, file:a.file}; paintPreview(); paintSteps();
+    toast("已把这张图设为「模特基础照」");
+  } else if(what === "scene"){
+    S.scene = {asset_id:a.asset_id, file:a.file}; paintPreview(); paintSteps();
+    toast("已把这张图设为「初版场景」");
+  } else if(what === "shot"){
+    S.shots = S.shots || [];
+    const n = S.shots.length + 1;
+    S.shots.push({asset_id:a.asset_id, file:a.file, shot_index:n,
+                  action_prompt: a.action_prompt || ("镜头 " + n)});
+    paintShots(); paintSteps();
+    toast("已加入一个镜头（共 " + S.shots.length + " 个）");
+  }
+});
+
+/* ---------- 启动 ---------- */
+initRatioSel(); initGenRatio(); paintPlainSpec(); paintCombo(); renderBatch();
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+{
+ "models": [
+  {
+   "model_id": "m-vlm",
+   "name": "Doubao Seed 2.0 Pro",
+   "vendor": "字节跳动",
+   "via": "artsapi 网关",
+   "match": [
+    "doubao-seed-2-0-pro"
+   ],
+   "unit_price": 0.0,
+   "priority": 1,
+   "enabled": true,
+   "kind": "vlm",
+   "call_model": "doubao-seed-2-0-pro-260215",
+   "purpose": "参考图 → 反推提示词（提示词识别）",
+   "note": "已验证可读图；按 token 计费，不计入按张成本"
+  },
+  {
+   "model_id": "m-seedream",
+   "name": "Seedream 5.0 Pro",
+   "vendor": "字节跳动",
+   "via": "artsapi 网关",
+   "match": [
+    "seedream"
+   ],
+   "unit_price": 0.6,
+   "priority": 1,
+   "enabled": true,
+   "purpose": "主链路默认：模特 / 场景 / 镜头组 / 成品",
+   "note": "细节与材质还原最稳；>2.36MP 计 0.60，≤2.36MP 计 0.30"
+  },
+  {
+   "model_id": "m-gemini",
+   "name": "Gemini 2.5 Flash Image",
+   "vendor": "Google",
+   "via": "Google AI Studio",
+   "match": [
+    "gemini"
+   ],
+   "unit_price": 0.3,
+   "priority": 2,
+   "enabled": true,
+   "purpose": "可选备选：人物一致性（自由出图下拉里选）",
+   "note": "换装换动作时人物一致性最好，单价最低；需 GEMINI_API_KEY，未配"
+  },
+  {
+   "model_id": "m-gptimage",
+   "name": "GPT Image 1",
+   "vendor": "OpenAI",
+   "via": "OpenAI Platform",
+   "match": [
+    "gpt-image"
+   ],
+   "unit_price": 0.5,
+   "priority": 3,
+   "enabled": true,
+   "purpose": "可选备选：成品 / 成套组合",
+   "note": "构图与指令遵循强；需 OPENAI_API_KEY，未配"
+  },
+  {
+   "model_id": "m-flux",
+   "name": "FLUX.2",
+   "vendor": "Black Forest Labs",
+   "via": "fal.ai",
+   "match": [
+    "flux"
+   ],
+   "unit_price": 0.4,
+   "priority": 4,
+   "enabled": false,
+   "purpose": "规划中：场景 / 自由出图",
+   "note": "氛围与光影强；fal.ai 端点尚未接入，当前停用"
+  },
+  {
+   "model_id": "m-rmbg",
+   "name": "RMBG-2.0",
+   "vendor": "BRIA",
+   "via": "本地部署",
+   "match": [
+    "rmbg",
+    "bria"
+   ],
+   "unit_price": 0.02,
+   "priority": 5,
+   "enabled": true,
+   "purpose": "抠图 / 去背",
+   "note": "本地跑，只计电费；不算进生图预算"
+  }
+ ],
+ "nodes": [
+  {
+   "node_id": "n-artsapi",
+   "name": "artsapi 兼容网关",
+   "base_url": "https://ai.artsapi.com/v1",
+   "models": [
+    "Seedream 5.0 Pro",
+    "Doubao Seed 2.0 Pro"
+   ],
+   "priority": 1,
+   "enabled": true,
+   "mode": "async",
+   "health": {
+    "status": "ok",
+    "latency_ms": 645,
+    "success_rate": 0.997,
+    "probes": 183,
+    "failovers": 0,
+    "last_check": ""
+   }
+  },
+  {
+   "node_id": "n-ark",
+   "name": "火山方舟 ARK（直连）",
+   "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+   "models": [
+    "Seedream 5.0 Pro"
+   ],
+   "priority": 2,
+   "enabled": false,
+   "mode": "async",
+   "health": {
+    "status": "off",
+    "latency_ms": 760,
+    "success_rate": 0.998,
+    "probes": 214,
+    "failovers": 0,
+    "last_check": ""
+   }
+  },
+  {
+   "node_id": "n-google",
+   "name": "Google AI Studio",
+   "base_url": "https://generativelanguage.googleapis.com/v1beta",
+   "models": [
+    "Gemini 2.5 Flash Image"
+   ],
+   "priority": 3,
+   "enabled": false,
+   "mode": "sync",
+   "health": {
+    "status": "off",
+    "latency_ms": 430,
+    "success_rate": 0.994,
+    "probes": 268,
+    "failovers": 0,
+    "last_check": ""
+   }
+  },
+  {
+   "node_id": "n-openai",
+   "name": "OpenAI Platform",
+   "base_url": "https://api.openai.com/v1",
+   "models": [
+    "GPT Image 1"
+   ],
+   "priority": 4,
+   "enabled": false,
+   "mode": "sync",
+   "health": {
+    "status": "off",
+    "latency_ms": 1620,
+    "success_rate": 0.961,
+    "probes": 96,
+    "failovers": 2,
+    "last_check": ""
+   }
+  },
+  {
+   "node_id": "n-fal",
+   "name": "fal.ai",
+   "base_url": "https://fal.run",
+   "models": [
+    "FLUX.2"
+   ],
+   "priority": 5,
+   "enabled": false,
+   "mode": "async",
+   "health": {
+    "status": "off",
+    "latency_ms": 0,
+    "success_rate": 0.0,
+    "probes": 0,
+    "failovers": 0,
+    "last_check": ""
+   }
+  }
+ ],
+ "members": [
+  {
+   "member_id": "u-01",
+   "employee_id": "lin.design",
+   "name": "林 · 视觉设计",
+   "role": "设计负责人",
+   "quota": 4000,
+   "used": 1842,
+   "status": "active",
+   "models": [
+    "Seedream 5.0 Pro",
+    "Gemini 2.5 Flash Image",
+    "GPT Image 1"
+   ]
+  },
+  {
+   "member_id": "u-02",
+   "employee_id": "chen.design",
+   "name": "陈 · 主设（内衣线）",
+   "role": "设计师",
+   "quota": 3000,
+   "used": 2410,
+   "status": "active",
+   "models": [
+    "Seedream 5.0 Pro",
+    "Gemini 2.5 Flash Image"
+   ]
+  },
+  {
+   "member_id": "u-03",
+   "employee_id": "wu.design",
+   "name": "吴 · 主设（家居线）",
+   "role": "设计师",
+   "quota": 3000,
+   "used": 1176,
+   "status": "active",
+   "models": [
+    "Seedream 5.0 Pro",
+    "Gemini 2.5 Flash Image"
+   ]
+  },
+  {
+   "member_id": "u-04",
+   "employee_id": "zhao.visual",
+   "name": "赵 · 视觉策划",
+   "role": "策划（只读）",
+   "quota": 800,
+   "used": 214,
+   "status": "active",
+   "models": [
+    "Seedream 5.0 Pro"
+   ]
+  },
+  {
+   "member_id": "u-05",
+   "employee_id": "sun.intern",
+   "name": "孙 · 设计实习",
+   "role": "设计师（受限）",
+   "quota": 600,
+   "used": 588,
+   "status": "limited",
+   "models": [
+    "Gemini 2.5 Flash Image"
+   ]
+  },
+  {
+   "member_id": "u-06",
+   "employee_id": "huang.design",
+   "name": "黄 · 主设（大杯线）",
+   "role": "设计师",
+   "quota": 3000,
+   "used": 0,
+   "status": "paused",
+   "models": [
+    "Seedream 5.0 Pro"
+   ]
+  }
+ ],
+ "config": {
+  "default_shots": 15,
+  "per_shot_variants": 2,
+  "max_concurrency": 4,
+  "retry": 2,
+  "retry_queue": true,
+  "batch_review": true,
+  "node_strategy": "priority",
+  "storage": "data/files",
+  "share_default": "team"
+ },
+ "updated_at": "2026-10-11T10:21:21",
+ "updated_by": "system"
+}

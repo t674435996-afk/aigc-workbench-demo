@@ -1,0 +1,46 @@
+[
+ {
+  "perf_id": "f1735690074061",
+  "recipe_id": "r1735689555030",
+  "period": "近30天",
+  "ctr": "0.072",
+  "cvr": "0.031",
+  "sales": 1280,
+  "source": "外部系统导出",
+  "imported_by": "lin.design",
+  "imported_at": "2026-09-22T10:30:00"
+ },
+ {
+  "perf_id": "f1735690074062",
+  "recipe_id": "r1735689555030",
+  "period": "上一周期",
+  "ctr": "0.064",
+  "cvr": "0.028",
+  "sales": 1090,
+  "source": "外部系统导出",
+  "imported_by": "lin.design",
+  "imported_at": "2026-09-22T10:30:00"
+ },
+ {
+  "perf_id": "f1735691126116",
+  "recipe_id": "r1735690590085",
+  "period": "近30天",
+  "ctr": "0.061",
+  "cvr": "0.027",
+  "sales": 1040,
+  "source": "外部系统导出",
+  "imported_by": "lin.design",
+  "imported_at": "2026-09-29T10:30:00"
+ },
+ {
+  "perf_id": "f1735692152166",
+  "recipe_id": "r1735691675139",
+  "period": "近30天",
+  "ctr": "0.052",
+  "cvr": "0.022",
+  "sales": 880,
+  "source": "外部系统导出",
+  "imported_by": "lin.design",
+  "imported_at": "2026-10-06T10:30:00"
+ }
+]

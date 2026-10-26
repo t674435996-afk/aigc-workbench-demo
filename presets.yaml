@@ -1,0 +1,51 @@
+# 出图工作台 · 图类型生成预设（静物 / 细节 / 模特）
+# 由 aigc_gen_tool.py 读取。核心思路：一个入口收敛多模型 ——
+# 图类型决定"这类图走哪个端点、用几张参考图、出几张、尺寸档位"。
+# 模型名与尺寸档位以各厂商公开 API 文档为准；换模型只改这里，不改代码。
+
+defaults:
+  bg_hex: "#F5F3EF"                 # 米白底（以视觉模板为准）
+  size: "2K"                        # 尺寸档位（1K/2K/4K）
+  ref_limit: 10                     # 多图融合上限
+  qc: "geometric_dE_sharpness"      # QC 口径：几何一致 / 色差ΔE / 模糊
+
+# —— ① 白底静物图（2 张/款）——
+still_life:
+  model: "doubao-seedream-5-0-pro-260628"   # 多图融合端点
+  endpoint: "seedream"
+  ref_images: 3                     # 输入产品多角度素材（正/侧/45°）
+  output: 2
+  prompt: >
+    将这张产品照片处理为电商白底静物图：保留产品的全部细节、颜色与比例，绝不改变廓形/标识/材质纹理；
+    背景替换为米白底（#F5F3EF），产品居中完整入画，光影自然柔和，无阴影生硬、无反光死白。
+
+# —— ② 细节特写图（1-2 张/款）——
+detail:
+  model: "doubao-seedream-5-0-pro-260628"   # 多图融合端点
+  endpoint: "seedream"
+  ref_images: 3                     # 输入细节特写素材
+  output: 2
+  prompt: >
+    基于这张局部特写素材，生成电商细节图：突出材质质感（{material}），标识/车线/纹路清晰锐利，
+    背景米白底（#F5F3EF），构图聚焦局部、不过度放大、不改变实物特征。
+
+# —— ③ 模特图（2 张/款）——
+onfoot:
+  model: "gemini-2.5-flash-image"           # 人物 / 场景融合端点
+  endpoint: "gemini"
+  ref_images: 3                     # 输入产品素材
+  template_ref: "视觉模板"           # 模特姿势 / 形象模板
+  output: 2
+  prompt: >
+    参考这组产品照片，把产品穿戴/放置到模特身上，生成电商模特图：产品廓形/颜色/标识与实物完全一致，
+    人物姿态自然真实、比例正常，背景米白底（#F5F3EF），画面干净，适合商品详情页。
+
+# —— 标签字段（识别后回填，prompt 中用 {material} 等占位）——
+tag_fields:
+  - category
+  - material
+  - structure
+  - color_tone
+  - toe
+  - heel
+  - style

@@ -1,0 +1,681 @@
+[
+ {
+  "recipe_id": "r1735689555030",
+  "name": "春季极简棚拍白模特",
+  "project_id": "p1735681941001",
+  "person_prompt": "正面直立 A-pose 素模特，肤色偏白、身形匀称，只穿肤色贴身衣物、无遮挡，全身完整入镜，四肢自然下垂，五官自然真实，不佩戴任何配饰",
+  "scene_prompt": "简洁室内摄影棚，纯白无缝背景，柔和顺光，地面干净，适合服装展示，无多余道具",
+  "product_prompt": "【产品细节】保持产品原样、颜色与版型不走样，面料质感与缝合细节清晰可见，领口 / 袖口 / 下摆等结构完整，自然贴合模特身形，不遮挡不穿模",
+  "action_prompt": "【动作构图】自然站姿或轻微走动，动作舒展不僵硬，构图居中留出留白，平视机位，突出人物与服装的整体关系，画面干净不抢戏",
+  "person_asset_id": "a1735689087008",
+  "scene_asset_id": "a1735689111010",
+  "final_asset_id": "a1735689547028",
+  "shots": [
+   {
+    "shot_index": 1,
+    "action": "正面直立 A-pose",
+    "asset_id": "a1735689146012"
+   },
+   {
+    "shot_index": 2,
+    "action": "侧身 45°",
+    "asset_id": "a1735689171013"
+   },
+   {
+    "shot_index": 3,
+    "action": "背面全身",
+    "asset_id": "a1735689196014"
+   },
+   {
+    "shot_index": 4,
+    "action": "行走抓拍",
+    "asset_id": "a1735689222015"
+   },
+   {
+    "shot_index": 5,
+    "action": "坐姿",
+    "asset_id": "a1735689247016"
+   },
+   {
+    "shot_index": 6,
+    "action": "半身特写",
+    "asset_id": "a1735689273017"
+   },
+   {
+    "shot_index": 7,
+    "action": "细节·面料",
+    "asset_id": "a1735689299018"
+   },
+   {
+    "shot_index": 8,
+    "action": "细节·领口肩线",
+    "asset_id": "a1735689327019"
+   },
+   {
+    "shot_index": 9,
+    "action": "景别·远景",
+    "asset_id": "a1735689353020"
+   },
+   {
+    "shot_index": 10,
+    "action": "景别·近景",
+    "asset_id": "a1735689379021"
+   },
+   {
+    "shot_index": 11,
+    "action": "俯拍",
+    "asset_id": "a1735689405022"
+   },
+   {
+    "shot_index": 12,
+    "action": "仰拍",
+    "asset_id": "a1735689431023"
+   },
+   {
+    "shot_index": 13,
+    "action": "侧后方视角",
+    "asset_id": "a1735689458024"
+   },
+   {
+    "shot_index": 14,
+    "action": "抬手动作",
+    "asset_id": "a1735689485025"
+   },
+   {
+    "shot_index": 15,
+    "action": "转身动作",
+    "asset_id": "a1735689511026"
+   }
+  ],
+  "params": {
+   "sku": "KN-1001-A",
+   "size": "2K",
+   "count": 1
+  },
+  "created_by": "lin.design",
+  "created_at": "2026-09-15T10:28:00",
+  "visibility": "team"
+ },
+ {
+  "recipe_id": "r1735690590085",
+  "name": "秋季英伦街头黑模特",
+  "project_id": "p1735681941001",
+  "person_prompt": "正面直立 A-pose 素模特，深肤色、短发、身形挺拔，只穿肤色贴身衣物、无遮挡，全身完整入镜，五官与身形自然真实",
+  "scene_prompt": "伦敦街区砖墙边，阴天漫射光，暖灰调街景，路面干净通透，适合服装展示",
+  "product_prompt": "【产品细节】保持产品原样、颜色与版型不走样，面料质感与缝合细节清晰可见，领口 / 袖口 / 下摆等结构完整，自然贴合模特身形，不遮挡不穿模",
+  "action_prompt": "【动作构图】自然站姿或轻微走动，动作舒展不僵硬，构图居中留出留白，平视机位，突出人物与服装的整体关系，画面干净不抢戏",
+  "person_asset_id": "a1735690119063",
+  "scene_asset_id": "a1735690145065",
+  "final_asset_id": "a1735690576083",
+  "shots": [
+   {
+    "shot_index": 1,
+    "action": "正面直立 A-pose",
+    "asset_id": "a1735690178067"
+   },
+   {
+    "shot_index": 2,
+    "action": "侧身 45°",
+    "asset_id": "a1735690203068"
+   },
+   {
+    "shot_index": 3,
+    "action": "背面全身",
+    "asset_id": "a1735690227069"
+   },
+   {
+    "shot_index": 4,
+    "action": "行走抓拍",
+    "asset_id": "a1735690253070"
+   },
+   {
+    "shot_index": 5,
+    "action": "坐姿",
+    "asset_id": "a1735690277071"
+   },
+   {
+    "shot_index": 6,
+    "action": "半身特写",
+    "asset_id": "a1735690303072"
+   },
+   {
+    "shot_index": 7,
+    "action": "细节·面料",
+    "asset_id": "a1735690329073"
+   },
+   {
+    "shot_index": 8,
+    "action": "细节·领口肩线",
+    "asset_id": "a1735690357074"
+   },
+   {
+    "shot_index": 9,
+    "action": "景别·远景",
+    "asset_id": "a1735690383075"
+   },
+   {
+    "shot_index": 10,
+    "action": "景别·近景",
+    "asset_id": "a1735690408076"
+   },
+   {
+    "shot_index": 11,
+    "action": "俯拍",
+    "asset_id": "a1735690434077"
+   },
+   {
+    "shot_index": 12,
+    "action": "仰拍",
+    "asset_id": "a1735690460078"
+   },
+   {
+    "shot_index": 13,
+    "action": "侧后方视角",
+    "asset_id": "a1735690486079"
+   },
+   {
+    "shot_index": 14,
+    "action": "抬手动作",
+    "asset_id": "a1735690513080"
+   },
+   {
+    "shot_index": 15,
+    "action": "转身动作",
+    "asset_id": "a1735690539081"
+   }
+  ],
+  "params": {
+   "sku": "KN-1009-A",
+   "size": "2K",
+   "count": 1
+  },
+  "created_by": "lin.design",
+  "created_at": "2026-09-22T14:28:00",
+  "visibility": "team"
+ },
+ {
+  "recipe_id": "r1735691675139",
+  "name": "夏季通勤简约亚裔模特",
+  "project_id": "p1735681941001",
+  "person_prompt": "正面直立 A-pose 素模特，亚裔面孔、黑色长直发、身形纤细，只穿肤色贴身衣物、无遮挡，全身完整入镜，五官自然真实",
+  "scene_prompt": "城市写字楼外立面，浅灰色混凝土墙面，上午自然侧光，空间通透不杂乱，适合服装展示",
+  "product_prompt": "【产品细节】保持产品原样、颜色与版型不走样，面料质感与缝合细节清晰可见，领口 / 袖口 / 下摆等结构完整，自然贴合模特身形，不遮挡不穿模",
+  "action_prompt": "【动作构图】自然站姿或轻微走动，动作舒展不僵硬，构图居中留出留白，平视机位，突出人物与服装的整体关系，画面干净不抢戏",
+  "person_asset_id": "a1735691171117",
+  "scene_asset_id": "a1735691197119",
+  "final_asset_id": "a1735691661137",
+  "shots": [
+   {
+    "shot_index": 1,
+    "action": "正面直立 A-pose",
+    "asset_id": "a1735691231121"
+   },
+   {
+    "shot_index": 2,
+    "action": "侧身 45°",
+    "asset_id": "a1735691257122"
+   },
+   {
+    "shot_index": 3,
+    "action": "背面全身",
+    "asset_id": "a1735691283123"
+   },
+   {
+    "shot_index": 4,
+    "action": "行走抓拍",
+    "asset_id": "a1735691309124"
+   },
+   {
+    "shot_index": 5,
+    "action": "坐姿",
+    "asset_id": "a1735691336125"
+   },
+   {
+    "shot_index": 6,
+    "action": "半身特写",
+    "asset_id": "a1735691368126"
+   },
+   {
+    "shot_index": 7,
+    "action": "细节·面料",
+    "asset_id": "a1735691399127"
+   },
+   {
+    "shot_index": 8,
+    "action": "细节·领口肩线",
+    "asset_id": "a1735691428128"
+   },
+   {
+    "shot_index": 9,
+    "action": "景别·远景",
+    "asset_id": "a1735691457129"
+   },
+   {
+    "shot_index": 10,
+    "action": "景别·近景",
+    "asset_id": "a1735691482130"
+   },
+   {
+    "shot_index": 11,
+    "action": "俯拍",
+    "asset_id": "a1735691509131"
+   },
+   {
+    "shot_index": 12,
+    "action": "仰拍",
+    "asset_id": "a1735691539132"
+   },
+   {
+    "shot_index": 13,
+    "action": "侧后方视角",
+    "asset_id": "a1735691570133"
+   },
+   {
+    "shot_index": 14,
+    "action": "抬手动作",
+    "asset_id": "a1735691596134"
+   },
+   {
+    "shot_index": 15,
+    "action": "转身动作",
+    "asset_id": "a1735691623135"
+   }
+  ],
+  "params": {
+   "sku": "KN-1017-A",
+   "size": "2K",
+   "count": 1
+  },
+  "created_by": "lin.design",
+  "created_at": "2026-09-29T11:28:00",
+  "visibility": "team"
+ },
+ {
+  "recipe_id": "r1735692689189",
+  "name": "冬季室内暖光白模特",
+  "project_id": "p1735681941001",
+  "person_prompt": "正面直立 A-pose 素模特，肤色偏白、浅棕长发，只穿肤色贴身衣物、无遮挡，全身完整入镜，姿态放松自然",
+  "scene_prompt": "室内复古客厅，米色墙纸与木质护墙板，暖色灯光，浅景深，空间通透",
+  "product_prompt": "【产品细节】保持产品原样、颜色与版型不走样，面料质感与缝合细节清晰可见，领口 / 袖口 / 下摆等结构完整，自然贴合模特身形，不遮挡不穿模",
+  "action_prompt": "【动作构图】自然站姿或轻微走动，动作舒展不僵硬，构图居中留出留白，平视机位，突出人物与服装的整体关系，画面干净不抢戏",
+  "person_asset_id": "a1735692198167",
+  "scene_asset_id": "a1735692226169",
+  "final_asset_id": "a1735692674187",
+  "shots": [
+   {
+    "shot_index": 1,
+    "action": "正面直立 A-pose",
+    "asset_id": "a1735692260171"
+   },
+   {
+    "shot_index": 2,
+    "action": "侧身 45°",
+    "asset_id": "a1735692286172"
+   },
+   {
+    "shot_index": 3,
+    "action": "背面全身",
+    "asset_id": "a1735692312173"
+   },
+   {
+    "shot_index": 4,
+    "action": "行走抓拍",
+    "asset_id": "a1735692339174"
+   },
+   {
+    "shot_index": 5,
+    "action": "坐姿",
+    "asset_id": "a1735692366175"
+   },
+   {
+    "shot_index": 6,
+    "action": "半身特写",
+    "asset_id": "a1735692392176"
+   },
+   {
+    "shot_index": 7,
+    "action": "细节·面料",
+    "asset_id": "a1735692418177"
+   },
+   {
+    "shot_index": 8,
+    "action": "细节·领口肩线",
+    "asset_id": "a1735692445178"
+   },
+   {
+    "shot_index": 9,
+    "action": "景别·远景",
+    "asset_id": "a1735692473179"
+   },
+   {
+    "shot_index": 10,
+    "action": "景别·近景",
+    "asset_id": "a1735692499180"
+   },
+   {
+    "shot_index": 11,
+    "action": "俯拍",
+    "asset_id": "a1735692525181"
+   },
+   {
+    "shot_index": 12,
+    "action": "仰拍",
+    "asset_id": "a1735692553182"
+   },
+   {
+    "shot_index": 13,
+    "action": "侧后方视角",
+    "asset_id": "a1735692580183"
+   },
+   {
+    "shot_index": 14,
+    "action": "抬手动作",
+    "asset_id": "a1735692607184"
+   },
+   {
+    "shot_index": 15,
+    "action": "转身动作",
+    "asset_id": "a1735692635185"
+   }
+  ],
+  "params": {
+   "sku": "KN-1022-A",
+   "size": "2K",
+   "count": 1
+  },
+  "created_by": "lin.design",
+  "created_at": "2026-10-06T15:28:00",
+  "visibility": "team"
+ },
+ {
+  "recipe_id": "r1735694999303",
+  "name": "夏季海边白纱长裙白模特",
+  "project_id": "p1735694418277",
+  "person_prompt": "正面直立 A-pose 素模特，肤色偏白、长直发，只穿肤色贴身衣物、无遮挡，全身完整入镜",
+  "scene_prompt": "海边礁石与浅滩，晴天侧逆光，远处海平线通透，风感自然",
+  "product_prompt": "【产品细节】保持产品原样、颜色与版型不走样，面料质感与缝合细节清晰可见，领口 / 袖口 / 下摆等结构完整，自然贴合模特身形，不遮挡不穿模",
+  "action_prompt": "【动作构图】自然站姿或轻微走动，动作舒展不僵硬，构图居中留出留白，平视机位，突出人物与服装的整体关系，画面干净不抢戏",
+  "person_asset_id": "a1735694495281",
+  "scene_asset_id": "a1735694526283",
+  "final_asset_id": "a1735694985301",
+  "shots": [
+   {
+    "shot_index": 1,
+    "action": "正面直立 A-pose",
+    "asset_id": "a1735694565285"
+   },
+   {
+    "shot_index": 2,
+    "action": "侧身 45°",
+    "asset_id": "a1735694592286"
+   },
+   {
+    "shot_index": 3,
+    "action": "背面全身",
+    "asset_id": "a1735694619287"
+   },
+   {
+    "shot_index": 4,
+    "action": "行走抓拍",
+    "asset_id": "a1735694646288"
+   },
+   {
+    "shot_index": 5,
+    "action": "坐姿",
+    "asset_id": "a1735694674289"
+   },
+   {
+    "shot_index": 6,
+    "action": "半身特写",
+    "asset_id": "a1735694702290"
+   },
+   {
+    "shot_index": 7,
+    "action": "细节·面料",
+    "asset_id": "a1735694728291"
+   },
+   {
+    "shot_index": 8,
+    "action": "细节·领口肩线",
+    "asset_id": "a1735694756292"
+   },
+   {
+    "shot_index": 9,
+    "action": "景别·远景",
+    "asset_id": "a1735694784293"
+   },
+   {
+    "shot_index": 10,
+    "action": "景别·近景",
+    "asset_id": "a1735694813294"
+   },
+   {
+    "shot_index": 11,
+    "action": "俯拍",
+    "asset_id": "a1735694840295"
+   },
+   {
+    "shot_index": 12,
+    "action": "仰拍",
+    "asset_id": "a1735694868296"
+   },
+   {
+    "shot_index": 13,
+    "action": "侧后方视角",
+    "asset_id": "a1735694895297"
+   },
+   {
+    "shot_index": 14,
+    "action": "抬手动作",
+    "asset_id": "a1735694921298"
+   },
+   {
+    "shot_index": 15,
+    "action": "转身动作",
+    "asset_id": "a1735694948299"
+   }
+  ],
+  "params": {
+   "sku": "KN-2001-A",
+   "size": "2K",
+   "count": 1
+  },
+  "created_by": "lin.design",
+  "created_at": "2026-10-05T11:28:00",
+  "visibility": "team"
+ },
+ {
+  "recipe_id": "r1735695592328",
+  "name": "春季街头休闲亚裔模特",
+  "project_id": "p1735694418277",
+  "person_prompt": "正面直立 A-pose 素模特，亚裔面孔、马尾发型，只穿肤色贴身衣物、无遮挡，全身完整入镜",
+  "scene_prompt": "老城区步行街，浅色水泥墙与绿植，下午自然光，空间不杂乱",
+  "product_prompt": "【产品细节】保持产品原样、颜色与版型不走样，面料质感与缝合细节清晰可见，领口 / 袖口 / 下摆等结构完整，自然贴合模特身形，不遮挡不穿模",
+  "action_prompt": "【动作构图】自然站姿或轻微走动，动作舒展不僵硬，构图居中留出留白，平视机位，突出人物与服装的整体关系，画面干净不抢戏",
+  "person_asset_id": "a1735695088306",
+  "scene_asset_id": "a1735695117308",
+  "final_asset_id": "a1735695576326",
+  "shots": [
+   {
+    "shot_index": 1,
+    "action": "正面直立 A-pose",
+    "asset_id": "a1735695153310"
+   },
+   {
+    "shot_index": 2,
+    "action": "侧身 45°",
+    "asset_id": "a1735695178311"
+   },
+   {
+    "shot_index": 3,
+    "action": "背面全身",
+    "asset_id": "a1735695204312"
+   },
+   {
+    "shot_index": 4,
+    "action": "行走抓拍",
+    "asset_id": "a1735695230313"
+   },
+   {
+    "shot_index": 5,
+    "action": "坐姿",
+    "asset_id": "a1735695256314"
+   },
+   {
+    "shot_index": 6,
+    "action": "半身特写",
+    "asset_id": "a1735695282315"
+   },
+   {
+    "shot_index": 7,
+    "action": "细节·面料",
+    "asset_id": "a1735695309316"
+   },
+   {
+    "shot_index": 8,
+    "action": "细节·领口肩线",
+    "asset_id": "a1735695339317"
+   },
+   {
+    "shot_index": 9,
+    "action": "景别·远景",
+    "asset_id": "a1735695366318"
+   },
+   {
+    "shot_index": 10,
+    "action": "景别·近景",
+    "asset_id": "a1735695392319"
+   },
+   {
+    "shot_index": 11,
+    "action": "俯拍",
+    "asset_id": "a1735695422320"
+   },
+   {
+    "shot_index": 12,
+    "action": "仰拍",
+    "asset_id": "a1735695451321"
+   },
+   {
+    "shot_index": 13,
+    "action": "侧后方视角",
+    "asset_id": "a1735695478322"
+   },
+   {
+    "shot_index": 14,
+    "action": "抬手动作",
+    "asset_id": "a1735695506323"
+   },
+   {
+    "shot_index": 15,
+    "action": "转身动作",
+    "asset_id": "a1735695536324"
+   }
+  ],
+  "params": {
+   "sku": "KN-2101-A",
+   "size": "2K",
+   "count": 1
+  },
+  "created_by": "lin.design",
+  "created_at": "2026-10-09T14:28:00",
+  "visibility": "team"
+ },
+ {
+  "recipe_id": "r1735696236356",
+  "name": "冬季室内暖光白模特",
+  "project_id": "p1735695667331",
+  "person_prompt": "正面直立 A-pose 素模特，肤色偏白、浅色短发，只穿肤色贴身衣物、无遮挡，全身完整入镜",
+  "scene_prompt": "室内暖光客厅，米色地毯与木质家具，暖黄落地灯，浅景深",
+  "product_prompt": "【产品细节】保持产品原样、颜色与版型不走样，面料质感与缝合细节清晰可见，领口 / 袖口 / 下摆等结构完整，自然贴合模特身形，不遮挡不穿模",
+  "action_prompt": "【动作构图】自然站姿或轻微走动，动作舒展不僵硬，构图居中留出留白，平视机位，突出人物与服装的整体关系，画面干净不抢戏",
+  "person_asset_id": "a1735695731334",
+  "scene_asset_id": "a1735695761336",
+  "final_asset_id": "a1735696220354",
+  "shots": [
+   {
+    "shot_index": 1,
+    "action": "正面直立 A-pose",
+    "asset_id": "a1735695801338"
+   },
+   {
+    "shot_index": 2,
+    "action": "侧身 45°",
+    "asset_id": "a1735695829339"
+   },
+   {
+    "shot_index": 3,
+    "action": "背面全身",
+    "asset_id": "a1735695857340"
+   },
+   {
+    "shot_index": 4,
+    "action": "行走抓拍",
+    "asset_id": "a1735695886341"
+   },
+   {
+    "shot_index": 5,
+    "action": "坐姿",
+    "asset_id": "a1735695912342"
+   },
+   {
+    "shot_index": 6,
+    "action": "半身特写",
+    "asset_id": "a1735695940343"
+   },
+   {
+    "shot_index": 7,
+    "action": "细节·面料",
+    "asset_id": "a1735695967344"
+   },
+   {
+    "shot_index": 8,
+    "action": "细节·领口肩线",
+    "asset_id": "a1735695993345"
+   },
+   {
+    "shot_index": 9,
+    "action": "景别·远景",
+    "asset_id": "a1735696020346"
+   },
+   {
+    "shot_index": 10,
+    "action": "景别·近景",
+    "asset_id": "a1735696046347"
+   },
+   {
+    "shot_index": 11,
+    "action": "俯拍",
+    "asset_id": "a1735696073348"
+   },
+   {
+    "shot_index": 12,
+    "action": "仰拍",
+    "asset_id": "a1735696100349"
+   },
+   {
+    "shot_index": 13,
+    "action": "侧后方视角",
+    "asset_id": "a1735696127350"
+   },
+   {
+    "shot_index": 14,
+    "action": "抬手动作",
+    "asset_id": "a1735696154351"
+   },
+   {
+    "shot_index": 15,
+    "action": "转身动作",
+    "asset_id": "a1735696181352"
+   }
+  ],
+  "params": {
+   "sku": "KN-3001-A",
+   "size": "2K",
+   "count": 1
+  },
+  "created_by": "lin.design",
+  "created_at": "2026-10-10T10:28:00",
+  "visibility": "team"
+ }
+]
